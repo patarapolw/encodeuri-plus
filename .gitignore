@@ -142,3 +142,7 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/macos,node
 
 .npmrc
+/umd/
+/dist/
+/lib/
+.cache
