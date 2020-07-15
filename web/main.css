@@ -1,0 +1,45 @@
+.repeatable, .repeatable section {
+  margin-bottom: 1rem;
+}
+
+code.output {
+  width: 100%;
+  display: block;
+  min-height: 2em;
+  word-break: break-all;
+}
+
+li section {
+  display: flex;
+  flex-direction: row;
+}
+
+.label {
+  padding-top: 0.5rem;
+  min-width: 4em;
+}
+
+.label::after {
+  content: ' :';
+}
+
+.field {
+  width: 100%;
+}
+
+@media screen and (min-width: 800px) {
+  body {
+    max-width: 1200px;
+  }
+
+  .h-screen-desktop {
+    max-height: 100vh;
+    overflow: scroll;
+  }
+
+  .has-2-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}

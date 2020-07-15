@@ -6,6 +6,7 @@ const {
   encodeQueryKey,
   encodeQueryValue,
   encodeHash,
+  makeUrl,
   // @ts-ignore
 } = encodeURIPlus
 
@@ -62,7 +63,7 @@ function encodeListener(evt) {
     return
   }
 
-  const section = target.closest('section')
+  const section = target.closest('.field')
   if (!section) {
     return
   }
@@ -79,56 +80,106 @@ function encodeListener(evt) {
     return
   }
 
-  const result = handler(target.value)
-
+  const result = handler(target.value, { minimal: true })
   const output = section.querySelector('code')
   if (output) {
     output.innerText = result
   }
 
-  buildUrl()
+  buildUrl({ label, raw: target.value, result })
 }
 
-function buildUrl() {
-  let u = ''
-  let isQueryStarted = false
+/**
+ *
+ * @param {object} [warn={}]
+ * @param {string} [warn.label]
+ * @param {string} [warn.raw]
+ * @param {string} [warn.result]
+ */
+function buildUrl(warn = {}) {
+  const urlParams = {
+    segments: [],
+    /**
+     * @type {Record<string, string | string[]>}
+     */
+    query: {},
+    /**
+     * @type {string | undefined}
+     */
+    hash: undefined,
+  }
+  let lastQueryKey = ''
+  let isQueryKeyLast = false
+  let isOrphan = false
 
   document.querySelectorAll('input[aria-label^="url-"]').forEach((inp) => {
     const currentLabel = inp.getAttribute('aria-label')
 
     if (inp instanceof HTMLInputElement) {
-      const section = inp.closest('section')
-      if (!section) {
+      if (currentLabel === 'url-qs-value' && inp.value && !isQueryKeyLast) {
+        isOrphan = true
         return
       }
 
-      const output = section.querySelector('code')
-      if (output && output.innerText) {
-        const prefix =
-          {
-            'url-qs-key': isQueryStarted ? '&' : '?',
-            'url-segment': '/',
-            'url-hash': '#',
-          }[currentLabel] || ''
+      if (currentLabel === 'url-qs-key' && inp.value) {
+        isQueryKeyLast = true
+        lastQueryKey = inp.value
+      } else {
+        isQueryKeyLast = false
+      }
 
-        const postfix =
-          {
-            'url-qs-key': '=',
-          }[currentLabel] || ''
+      const handler = {
+        /**
+         * @type {(s: string) => void}
+         */
+        'url-segment': (s) => {
+          if (s) {
+            urlParams.segments.push(s)
+          }
+        },
+        /**
+         * @type {(s: string) => void}
+         */
+        'url-qs-value': (s) => {
+          if (lastQueryKey) {
+            const previousValue = urlParams.query[lastQueryKey]
+            /**
+             * Can also push empty value
+             */
+            if (previousValue) {
+              const queryValueArray = Array.isArray(previousValue)
+                ? previousValue
+                : [previousValue]
+              queryValueArray.push(s)
+              urlParams.query[lastQueryKey] = queryValueArray
+            } else {
+              urlParams.query[lastQueryKey] = s
+            }
 
-        u += prefix + output.innerText + postfix
+            /**
+             * Clear when used
+             */
+            lastQueryKey = ''
+          }
+        },
+        /**
+         * @type {(s: string) => void}
+         */
+        'url-hash': (s) => {
+          /**
+           * Nullify if empty
+           */
+          urlParams.hash = s || undefined
+        },
+      }[currentLabel]
 
-        if (currentLabel === 'url-qs-key') {
-          isQueryStarted = true
-        }
+      if (handler) {
+        handler(inp.value)
       }
     }
   })
 
-  if (u[0] !== '/') {
-    u = '/' + u
-  }
-
+  const u = makeUrl(urlParams, { minimal: true })
   const url = new URL(u, 'https://www.example.com')
 
   document.querySelectorAll('code[data-output]').forEach((code) => {
@@ -141,12 +192,24 @@ function buildUrl() {
       }
 
       if (outputType === 'qs') {
+        const possible = new Set()
+
         /**
          * @type {Record<string, string | string[]>}
          */
         const qs = {}
 
         for (const [k, v] of url.searchParams) {
+          if (!isOrphan) {
+            if (warn.label === 'url-qs-key' && k) {
+              possible.add(k)
+            }
+
+            if (warn.label === 'url-qs-value' && v) {
+              possible.add(v)
+            }
+          }
+
           const prev = qs[k]
 
           if (Array.isArray(prev)) {
@@ -158,6 +221,15 @@ function buildUrl() {
           }
         }
 
+        console.log(isOrphan, possible, warn)
+
+        if (possible.size) {
+          const decodedValue = decodeURIComponent(warn.result)
+          if (decodedValue !== warn.raw || !possible.has(decodedValue)) {
+            alert(`Some of the query are mis-parsed: ${warn.result}`)
+          }
+        }
+
         code.innerText = Object.keys(qs).length
           ? JSON.stringify(qs, null, 2)
           : ''
@@ -166,6 +238,13 @@ function buildUrl() {
 
       const segment = url[outputType]
       if (typeof segment === 'string') {
+        if (outputType === 'hash' && warn.label === 'url-hash' && segment) {
+          const decodedValue = decodeURIComponent(warn.result)
+          if (decodedValue !== warn.raw || segment !== `#${warn.result}`) {
+            alert(`URL hash is mis-parsed: ${decodedValue}`)
+          }
+        }
+
         code.innerText = segment
       }
     }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/holiday.css" />
+  <title>encodeURI-plus</title>
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+  <section class="has-2-columns">
+    <article class="h-screen-desktop">
+      <h2>Minimal URL builder</h2>
+      <div>
+        <h3>Path segments</h3>
+        <ul class="repeatable">
+          <li>
+            <div class="field">
+              <input class="key" type="text" aria-label="url-segment" />
+              <code class="output"></code>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3>Querystring</h3>
+        <ul class="repeatable">
+          <li>
+            <article class="has-2-columns">
+              <section>
+                <div class="label">Key</div>
+                <div class="field">
+                  <input class="key" type="text" aria-label="url-qs-key" />
+                  <code class="output"></code>
+                </div>
+              </section>
+              <section>
+                <div class="label">Value</div>
+                <div class="field">
+                  <input type="text" aria-label="url-qs-value" />
+                  <code class="output"></code>
+                </div>
+              </section>
+            </article>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3>Fragment (hash)</h3>
+        <div class="field">
+          <input type="text" aria-label="url-hash" />
+          <code class="output"></code>
+        </div>
+      </div>
+    </article>
+
+    <article class="h-screen-desktop">
+      <h3>Generated URL</h3>
+      <small>Using basic string concatenation</small>
+      <pre><code data-output="full"></code></pre>
+
+      <h3>Parsed URL</h3>
+      <small>Based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties</small>
+      <blockquote class="parsed-url">
+        <h4>Pathname</h4>
+        <pre><code data-output="pathname"></code></pre>
+
+        <h4>Search (Querystring)</h4>
+        <pre><code data-output="search"></code></pre>
+
+        <h4>Parsed querystring</h4>
+        <small>Looping through <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams" target="_blank" rel="noopener noreferrer">URL.searchPararms</a></small>
+        <pre><code data-output="qs"></code></pre>
+
+        <h4>Hash (fragment)</h4>
+        <pre><code data-output="hash"></code></pre>
+      </blockquote>
+    </article>
+  </section>
+
+  <script src="../browser.ts"></script>
+  <script src="./main.js"></script>
+</body>
+</html>
