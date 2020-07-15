@@ -206,9 +206,10 @@ function buildUrl(pre = {}) {
         const possible = new Set()
         if (pre.label === 'url-qs-key') {
           Object.keys(query).map((k) => possible.add(k))
-        } else if (!isOrphan && pre.label === 'url-qs-value') {
+        } else if (pre.label === 'url-qs-value') {
           Object.entries(query)
-            .map((vs) => (Array.isArray(vs) ? vs : [vs]))
+            .filter(([k]) => k)
+            .map(([, vs]) => (Array.isArray(vs) ? vs : [vs]))
             .reduce((prev, c) => [...prev, ...c], [])
             .map((v) => possible.add(v))
         }
@@ -249,6 +250,26 @@ function buildUrl(pre = {}) {
           }
         } else {
           el.innerText = url.pathname !== '/' ? url.pathname : ''
+        }
+
+        return
+      }
+
+      if (outputType === 'hash') {
+        if (pre.label === 'url-hash') {
+          const decodedValue = decodeURIComponent(pre.result)
+          if (decodedValue !== pre.raw || (hash && hash !== decodedValue)) {
+            errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
+          }
+        }
+
+        if (el.tagName === 'CODE') {
+          el.innerText = hash || ''
+          if (Prism && el.innerText) {
+            Prism.highlightElement(el)
+          }
+        } else {
+          el.innerText = url.hash
         }
       }
     }
