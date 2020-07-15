@@ -220,7 +220,7 @@ export function makeUrl(urlParts: IURLParts, opts: IEncodeOptions = {}) {
     u += '#' + encodeHash(hash, opts)
   }
 
-  return base.endsWith('/') ? base.slice(0, -1) : base + u
+  return (base.endsWith('/') ? base.slice(0, -1) : base) + u
 }
 
 export function parseUrl(s: string): IURLParts {
