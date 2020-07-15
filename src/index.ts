@@ -1,22 +1,42 @@
 export const RESERVED = ';,/?:@&=+$'.split('')
 export const UNRESERVED = /[A-Za-z0-9-_.~]/
 // eslint-disable-next-line no-control-regex
-export const UNSAFE = /[\x00-\x7F #]/
-export const POTENTIALLY_USABLE = new RegExp(
-  `[^\\x00-\\x7F #${RESERVED.join('')}${UNRESERVED.source
-    .substr(1)
-    .slice(0, -1)}]`
-)
+export const NON_ASCII = /[^\x00-\x7F]/
+
+export const URL_CONSTRUCTOR_UNSAFE = {
+  data: {
+    pathname: {
+      destroyed: ' #.?',
+      encoded: '"<>`{}',
+      error: '/\\',
+    },
+    key: {
+      destroyed: '#&+=',
+    },
+    value: {
+      destroyed: ' #&+',
+    },
+    hash: {
+      destroyed: ' ',
+      encoded: '"<>`',
+    },
+    notEncoded: '.',
+  },
+  get(key: 'pathname' | 'key' | 'value' | 'hash') {
+    return Object.values(this.data[key]).join('').split('')
+  },
+}
 
 export interface IEncodeOptions {
   /**
    * @default true
    */
-  allowUnicode?: boolean
+  allowNonAscii?: boolean
   allowed?: string[]
   disallowed?: string[]
   allowedRegex?: RegExp[]
   disallowedRegex?: RegExp[]
+  throws?: (string | RegExp)[]
   replaceMap?: Record<string, string>
   /**
    * Default is encodeURIComponent
@@ -24,34 +44,47 @@ export interface IEncodeOptions {
   encoder?: (s: string) => string
 }
 
+/**
+ * '/', '\\', '.' are encoded, but you may wish for it to throw instead.
+ * @see https://stackoverflow.com/questions/3856693/a-url-resource-that-is-a-dot-2e
+ * @see https://stackoverflow.com/questions/3235219/urlencoded-forward-slash-is-breaking-url
+ *
+ * As far as as I have tested, '.' and '..', even encoded version always throw an error.
+ *
+ * But not '...'
+ */
 export function encodePath(s: string, opts: IEncodeOptions = {}) {
   const {
-    allowUnicode = true,
+    disallowed = [],
+    allowNonAscii = true,
     allowedRegex = [],
-    replaceMap = {},
+    throws = [],
     ...remaining
   } = opts
+  const { encoder } = remaining
+  if (!encoder || [encodeURI, encodeURIComponent].includes(encoder)) {
+    throws.push(/^\.{1,2}$/)
+  }
+
   return encode(s, {
     ...remaining,
-    replaceMap: Object.assign(
-      {
-        '/': '%2F',
-      },
-      replaceMap
-    ),
-    allowedRegex: allowUnicode
-      ? [...allowedRegex, POTENTIALLY_USABLE]
-      : allowedRegex,
+    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('pathname')],
+    throws,
+    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
   })
 }
 
 export function encodeQueryKey(s: string, opts: IEncodeOptions = {}) {
-  const { allowUnicode = true, allowedRegex = [], ...remaining } = opts
+  const {
+    disallowed = [],
+    allowNonAscii = true,
+    allowedRegex = [],
+    ...remaining
+  } = opts
   return encode(s, {
     ...remaining,
-    allowedRegex: allowUnicode
-      ? [...allowedRegex, POTENTIALLY_USABLE]
-      : allowedRegex,
+    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('key')],
+    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
   })
 }
 
@@ -60,7 +93,7 @@ export function encodeQueryKey(s: string, opts: IEncodeOptions = {}) {
  */
 export function encodeQueryValue(s: string, opts: IEncodeOptions = {}) {
   const {
-    allowUnicode = true,
+    allowNonAscii = true,
     allowed = [],
     disallowed = [],
     allowedRegex = [],
@@ -69,41 +102,40 @@ export function encodeQueryValue(s: string, opts: IEncodeOptions = {}) {
   return encode(s, {
     ...remaining,
     allowed: [...allowed, ...RESERVED],
-    disallowed: [...disallowed, '&', '+'],
-    allowedRegex: allowUnicode
-      ? [...allowedRegex, POTENTIALLY_USABLE]
-      : allowedRegex,
+    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('value')],
+    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
   })
 }
 
 export function encodeHash(s: string, opts: IEncodeOptions = {}) {
   const {
-    allowUnicode = true,
+    allowNonAscii = true,
     allowed = [],
+    disallowed = [],
     allowedRegex = [],
     ...remaining
   } = opts
   return encode(s, {
     ...remaining,
     allowed: [...allowed, ...RESERVED],
-    allowedRegex: allowUnicode
-      ? [...allowedRegex, POTENTIALLY_USABLE]
-      : allowedRegex,
+    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('hash')],
+    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
   })
 }
 
 export function encode(s: string, opts: IEncodeOptions = {}) {
   const {
-    allowUnicode = true,
+    allowNonAscii = true,
     allowed = [],
     disallowed = [],
     allowedRegex = [],
     disallowedRegex = [],
+    throws = [],
     replaceMap = {},
     encoder,
   } = opts
-  if (allowUnicode) {
-    allowedRegex.push(POTENTIALLY_USABLE)
+  if (allowNonAscii) {
+    allowedRegex.push(NON_ASCII)
   }
 
   const allowedSet = new Set(allowed)
@@ -111,6 +143,10 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
 
   if (disallowed.length) {
     disallowed.map((el) => allowedSet.delete(el))
+  }
+
+  if (throws.some((t) => s.match(t))) {
+    throw new Error(`${s} is not allowed.`)
   }
 
   let cs: string[] = [s]
@@ -136,6 +172,8 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
       ) {
         return c
       }
+
+      console.log(c, replaceMap)
 
       if (Object.keys(replaceMap).some((k) => c.includes(k))) {
         return c

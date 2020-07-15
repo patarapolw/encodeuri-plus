@@ -80,7 +80,13 @@ function encodeListener(evt) {
     return
   }
 
-  const result = handler(target.value, { minimal: true })
+  let result = ''
+  try {
+    result = handler(target.value)
+  } catch (e) {
+    alert(e.message)
+    // throw e
+  }
   const output = section.querySelector('code')
   if (output) {
     output.innerText = result
@@ -248,7 +254,7 @@ function buildUrl(pre = {}) {
         if (pre.label === 'url-segment') {
           const decodedValue = decodeURIComponent(pre.result)
           if (decodedValue !== pre.raw || !parsedPathname.includes(pre.raw)) {
-            errorMessage = `Some of URL params are mis-parsed: ${pre.raw}`
+            errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
           }
         }
 
@@ -273,7 +279,7 @@ function buildUrl(pre = {}) {
         }
 
         if (el.tagName === 'CODE') {
-          el.innerText = parsedHash
+          el.innerText = parsedHash ? JSON.stringify(parsedHash) : ''
         } else {
           el.innerText = url.hash
         }

@@ -1,0 +1,18 @@
+{
+  "pathname": {
+    "destroyed": " #.?",
+    "encoded": "\"<>`{}",
+    "error": "/\\"
+  },
+  "key": {
+    "destroyed": "#&+="
+  },
+  "value": {
+    "destroyed": " #&+"
+  },
+  "hash": {
+    "destroyed": " ",
+    "encoded": "\"<>`"
+  },
+  "notEncoded": "."
+}

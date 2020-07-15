@@ -6,7 +6,9 @@ Minimally and safely encode URIComponents for use in shorter URLs. Avoid Percent
 
 - Allow non-ASCII characters
 - Allow reserved characters in querystring values and hash
-- Some characters such as `&+` will break serialization-deserialization if used in querystring values, therefore disabled
+- Some characters will break serialization-deserialization, therefore they have to be encoded.
+  - Querystring values - `&+` in reseved list
+  - Path params - `/`
 - Customizable options.
 
 ```ts
