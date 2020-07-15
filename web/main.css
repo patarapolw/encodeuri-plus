@@ -10,6 +10,10 @@ code.output {
   white-space: pre-wrap;
 }
 
+code[data-output] .token {
+  background-color: inherit;
+}
+
 li section {
   display: flex;
   flex-direction: row;

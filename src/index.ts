@@ -177,8 +177,6 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
         return c
       }
 
-      console.log(c, replaceMap)
-
       if (replaceRegex && Object.keys(replaceMap).some((k) => c.includes(k))) {
         return c.replace(replaceRegex, (c0) => {
           return replaceMap[c0] || (encoder || encodeURIComponent)(c0)
@@ -237,7 +235,6 @@ export function parseUrl(s: string): IURLParts {
     qs: Record<string, string | string[]>
   ) => {
     for (const [k, v] of Array.from(url.searchParams)) {
-      console.log(k, v)
       const prev = qs[k]
 
       if (Array.isArray(prev)) {

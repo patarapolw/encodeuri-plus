@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/holiday.css" />
   <title>encodeURI-plus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/themes/prism.min.css">
   <link rel="stylesheet" href="main.css">
 </head>
 <body>
@@ -65,20 +66,23 @@
       <small>Based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties, parsed and validated with <code>decodeURIComponent</code></small>
       <blockquote class="parsed-url">
         <h4>Path segments (pathname)</h4>
-        <pre><code data-output="pathname"></code></pre>
+        <pre><code class="language-json" data-output="pathname"></code></pre>
         <small data-output="pathname"></small>
 
         <h4>Querystring (search)</h4>
         <small><a href="https://github.com/patarapolw/encodeuri-plus/blob/master/src/index.ts#233" target="_blank" rel="noopener noreferrer">Looping</a> through <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams" target="_blank" rel="noopener noreferrer">URL.searchPararms</a></small>
-        <pre><code data-output="search"></code></pre>
+        <pre><code class="language-json" data-output="search"></code></pre>
         <small data-output="search"></small>
 
         <h4>Fragment (hash)</h4>
-        <pre><code data-output="hash"></code></pre>
+        <pre><code class="language-json" data-output="hash"></code></pre>
         <small data-output="hash"></small>
       </blockquote>
     </article>
   </section>
+
+  <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/components/prism-core.min.js"></script>
+  <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/plugins/autoloader/prism-autoloader.min.js"></script>
 
   <script src="../browser.ts"></script>
   <script src="./main.js"></script>

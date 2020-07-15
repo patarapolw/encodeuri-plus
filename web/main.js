@@ -192,6 +192,9 @@ function buildUrl(pre = {}) {
 
   document.querySelectorAll('[data-output]').forEach((el) => {
     if (el instanceof HTMLElement) {
+      // @ts-ignore
+      const { Prism } = window
+
       const outputType = el.getAttribute('data-output')
 
       if (outputType === 'full') {
@@ -219,6 +222,9 @@ function buildUrl(pre = {}) {
 
         if (el.tagName === 'CODE') {
           el.innerText = query ? JSON.stringify(query, null, 2) : ''
+          if (Prism && el.innerText) {
+            Prism.highlightElement(el)
+          }
         } else {
           el.innerText = url.search
         }
@@ -228,31 +234,21 @@ function buildUrl(pre = {}) {
       if (outputType === 'pathname') {
         if (pre.label === 'url-segment') {
           const decodedValue = decodeURIComponent(pre.result)
-          if (decodedValue !== pre.raw || !segments.includes(pre.raw)) {
+          if (
+            decodedValue !== pre.raw ||
+            (segments && !segments.includes(pre.raw))
+          ) {
             errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
           }
         }
 
         if (el.tagName === 'CODE') {
           el.innerText = segments ? JSON.stringify(segments) : ''
+          if (Prism && el.innerText) {
+            Prism.highlightElement(el)
+          }
         } else {
           el.innerText = url.pathname !== '/' ? url.pathname : ''
-        }
-        return
-      }
-
-      if (outputType === 'hash') {
-        if (url.hash && pre.label === 'url-hash') {
-          const decodedValue = decodeURIComponent(pre.result)
-          if (decodedValue !== pre.raw || hash !== pre.raw) {
-            alert(`URL hash is mis-parsed: ${pre.raw}`)
-          }
-        }
-
-        if (el.tagName === 'CODE') {
-          el.innerText = hash ? JSON.stringify(hash) : ''
-        } else {
-          el.innerText = url.hash
         }
       }
     }
