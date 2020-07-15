@@ -23,11 +23,12 @@
     "querystring"
   ],
   "scripts": {
-    "engine-strict": "echo 'engine-strict=true' > .npmrc",
+    "engine-strict": "echo 'engine-strict=true' >> .npmrc",
     "build": "tsc -p src/tsconfig.json",
     "browserify": "parcel build -d lib -o index.umd.js ./browser.ts",
     "web": "parcel web/index.html",
-    "deploy": "parcel build --public-url /hyperpug web/index.html && gh-pages -d dist",
+    "web:build": "parcel build web/index.html",
+    "deploy": "netlify deploy -d dist",
     "prepack": "yarn build && yarn browserify"
   },
   "devDependencies": {
