@@ -1,6 +1,6 @@
 {
   "name": "encodeuri-plus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "files": [
     "lib",
@@ -27,7 +27,7 @@
     "build": "tsc -p src/tsconfig.json",
     "browserify": "parcel build -d lib -o index.umd.js ./browser.ts",
     "web": "parcel web/index.html",
-    "web:build": "parcel build web/index.html",
+    "predeploy": "parcel build web/index.html",
     "deploy": "netlify deploy -d dist",
     "prepack": "yarn build && yarn browserify"
   },
