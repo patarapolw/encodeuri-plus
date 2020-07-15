@@ -15,7 +15,8 @@
       <h2>Compact URL builder</h2>
       <div>
         <h3>Path segments</h3>
-        <small><code>.</code> and <code>..</code> are impossible, with <code>encodeURI</code> or <code>encodeURIComponent</code>.</small>
+        <p><small><code>.</code> and <code>..</code> <a href="https://stackoverflow.com/questions/3856693/a-url-resource-that-is-a-dot-2e" target="_blank" rel="noopener noreferrer">are impossible</a>, with <code>encodeURI</code> or <code>encodeURIComponent</code></small></p>
+        <!-- <p><small><code>/</code> and <code>\</code> are possible, but <a href="https://stackoverflow.com/questions/3235219/urlencoded-forward-slash-is-breaking-url" target="_blank" rel="noopener noreferrer">not guaranteed</a></small></p> -->
         <ul class="repeatable">
           <li>
             <div class="field">
@@ -59,11 +60,12 @@
 
     <article class="h-screen-desktop">
       <h3>Generated URL</h3>
-      <small>Using <a href="https://github.com/patarapolw/encodeuri-plus/blob/5e5b1935930523969522c27c76f4fd0f560cc0f2/src/index.ts#L201" target="_blank" rel="noopener noreferrer">basic string concatenation</a></small>
+      <p><small><a href="https://github.com/patarapolw/encodeuri-plus/blob/5e5b1935930523969522c27c76f4fd0f560cc0f2/src/index.ts#L198" target="_blank" rel="noopener noreferrer"><code>makeUrl</code> function</a>, using <a href="https://github.com/patarapolw/encodeuri-plus/blob/5e5b1935930523969522c27c76f4fd0f560cc0f2/src/index.ts#L201" target="_blank" rel="noopener noreferrer">basic string concatenation</a></small></p>
       <pre><code data-output="full"></code></pre>
 
       <h3>Parsed URL</h3>
-      <small>Based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties, parsed and validated with <code>decodeURIComponent</code></small>
+      <p><small><a href="https://github.com/patarapolw/encodeuri-plus/blob/5e5b1935930523969522c27c76f4fd0f560cc0f2/src/index.ts#L226" target="_blank" rel="noopener noreferrer"><code>parseUrl</code> function</a>, based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties</small></p>
+      <p><small>Parsed and validated with <code>decodeURIComponent</code></small></p>
       <blockquote class="parsed-url">
         <h4>Path segments (pathname)</h4>
         <pre><code class="language-json" data-output="pathname"></code></pre>
