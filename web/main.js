@@ -7,6 +7,7 @@ const {
   encodeQueryValue,
   encodeHash,
   makeUrl,
+  parseUrl,
   // @ts-ignore
 } = encodeURIPlus
 
@@ -186,8 +187,8 @@ function buildUrl(pre = {}) {
     }
   })
 
-  const u = makeUrl(urlParams, { minimal: true })
-  const url = new URL(u, 'https://www.example.com')
+  const u = makeUrl(urlParams)
+  const { segments, query, hash, url } = parseUrl(u)
 
   document.querySelectorAll('[data-output]').forEach((el) => {
     if (el instanceof HTMLElement) {
@@ -200,32 +201,13 @@ function buildUrl(pre = {}) {
 
       if (outputType === 'search') {
         const possible = new Set()
-
-        /**
-         * @type {Record<string, string | string[]>}
-         */
-        const qs = {}
-
-        for (const [k, v] of url.searchParams) {
-          if (!isOrphan) {
-            if (pre.label === 'url-qs-key' && k) {
-              possible.add(k)
-            }
-
-            if (pre.label === 'url-qs-value' && v) {
-              possible.add(v)
-            }
-          }
-
-          const prev = qs[k]
-
-          if (Array.isArray(prev)) {
-            prev.push(v)
-          } else if (typeof prev === 'string') {
-            qs[k] = [prev, v]
-          } else {
-            qs[k] = v
-          }
+        if (pre.label === 'url-qs-key') {
+          Object.keys(query).map((k) => possible.add(k))
+        } else if (!isOrphan && pre.label === 'url-qs-value') {
+          Object.entries(query)
+            .map((vs) => (Array.isArray(vs) ? vs : [vs]))
+            .reduce((prev, c) => [...prev, ...c], [])
+            .map((v) => possible.add(v))
         }
 
         if (possible.size) {
@@ -236,8 +218,8 @@ function buildUrl(pre = {}) {
         }
 
         if (el.tagName === 'CODE') {
-          el.innerText = Object.keys(qs).length
-            ? JSON.stringify(qs, null, 2)
+          el.innerText = Object.keys(query).length
+            ? JSON.stringify(query, null, 2)
             : ''
         } else {
           el.innerText = url.search
@@ -246,22 +228,15 @@ function buildUrl(pre = {}) {
       }
 
       if (outputType === 'pathname') {
-        const parsedPathname = url.pathname
-          .split('/')
-          .filter((s) => s)
-          .map((s) => decodeURIComponent(s))
-
         if (pre.label === 'url-segment') {
           const decodedValue = decodeURIComponent(pre.result)
-          if (decodedValue !== pre.raw || !parsedPathname.includes(pre.raw)) {
+          if (decodedValue !== pre.raw || !segments.includes(pre.raw)) {
             errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
           }
         }
 
         if (el.tagName === 'CODE') {
-          el.innerText = parsedPathname.length
-            ? JSON.stringify(parsedPathname)
-            : ''
+          el.innerText = segments.length ? JSON.stringify(segments) : ''
         } else {
           el.innerText = url.pathname
         }
@@ -269,17 +244,15 @@ function buildUrl(pre = {}) {
       }
 
       if (outputType === 'hash') {
-        const parsedHash = decodeURIComponent(url.hash.replace(/^#/, ''))
-
         if (url.hash && pre.label === 'url-hash') {
           const decodedValue = decodeURIComponent(pre.result)
-          if (decodedValue !== pre.raw || parsedHash !== pre.raw) {
+          if (decodedValue !== pre.raw || hash !== pre.raw) {
             alert(`URL hash is mis-parsed: ${pre.raw}`)
           }
         }
 
         if (el.tagName === 'CODE') {
-          el.innerText = parsedHash ? JSON.stringify(parsedHash) : ''
+          el.innerText = hash ? JSON.stringify(hash) : ''
         } else {
           el.innerText = url.hash
         }

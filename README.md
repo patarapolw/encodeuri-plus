@@ -14,12 +14,15 @@ Minimally and safely encode URIComponents for use in shorter URLs. Avoid Percent
 ```ts
 export interface IEncodeOptions {
   /**
-   * Do not encode if does not affect URL parser
+   * @default true
    */
-  minimal?: boolean
+  allowNonAscii?: boolean
   allowed?: string[]
   disallowed?: string[]
   allowedRegex?: RegExp[]
+  disallowedRegex?: RegExp[]
+  throws?: (string | RegExp)[]
+  replaceMap?: Record<string, string>
   /**
    * Default is encodeURIComponent
    */

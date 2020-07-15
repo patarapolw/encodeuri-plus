@@ -187,15 +187,15 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
     .join('')
 }
 
-export function makeUrl(
-  urlParams: {
-    segments?: string[]
-    query?: Record<string, string | string[]>
-    hash?: string
-  },
-  opts: IEncodeOptions = {}
-) {
-  const { segments = [], query = {}, hash } = urlParams
+export interface IURLParts {
+  base?: string
+  segments?: string[]
+  query?: Record<string, string | string[]>
+  hash?: string
+}
+
+export function makeUrl(urlParts: IURLParts, opts: IEncodeOptions = {}) {
+  const { base = '', segments = [], query = {}, hash } = urlParts
 
   let u = '/'
   u += segments.map((s) => encodePath(s, opts)).join('/')
@@ -219,7 +219,47 @@ export function makeUrl(
     u += '#' + encodeHash(hash, opts)
   }
 
-  return u
+  return base.endsWith('/') ? base.slice(0, -1) : base + u
+}
+
+export function parseUrl(s: string): IURLParts {
+  const URL =
+    typeof window !== 'undefined'
+      ? window.URL
+      : (require('url').URL as typeof globalThis.URL)
+
+  const dummyBaseURL = `https://${Math.random().toString(36)}`
+  const url = new URL(s, dummyBaseURL)
+  const query: Record<string, string | string[]> = ((
+    qs: Record<string, string | string[]>
+  ) => {
+    for (const [k, v] of Array.from(url.searchParams)) {
+      console.log(k, v)
+      const prev = qs[k]
+
+      if (Array.isArray(prev)) {
+        prev.push(v)
+      } else if (typeof prev === 'string') {
+        qs[k] = [prev, v]
+      } else {
+        qs[k] = v
+      }
+    }
+
+    return qs
+  })({})
+
+  return {
+    base: url.origin === dummyBaseURL ? undefined : decodeURI(url.origin),
+    segments: url.pathname
+      .split('/')
+      .filter((el) => el)
+      .map((el) => decodeURIComponent(el)),
+    query,
+    hash: decodeURIComponent(url.hash.replace(/^#/, '')),
+    // @ts-ignore
+    url,
+  }
 }
 
 /**
