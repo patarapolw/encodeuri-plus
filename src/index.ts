@@ -29,19 +29,58 @@ export const URL_CONSTRUCTOR_UNSAFE = {
 
 export interface IEncodeOptions {
   /**
+   * Do not encode non-ASCII
+   *
    * @default true
    */
   allowNonAscii?: boolean
+  /**
+   * Do not encode
+   */
   allowed?: string[]
-  disallowed?: string[]
+  /**
+   * Do not encode
+   */
   allowedRegex?: RegExp[]
+  /**
+   * Do encode, if possible
+   */
+  disallowed?: string[]
+  /**
+   * Do encode, if possible
+   */
   disallowedRegex?: RegExp[]
+  /**
+   * Throw error if matches
+   */
   throws?: (string | RegExp)[]
+  /**
+   * Extra replaceMap beyond `encoder`
+   */
   replaceMap?: Record<string, string>
   /**
    * @default encodeURIComponent
    */
   encoder?: (s: string) => string
+}
+
+export interface IDecodeOptions {
+  /**
+   * Extra replaceMap beyond decodeURIComponent
+   */
+  replaceMap?: Record<string, string>
+  /**
+   * @default decodeURIComponent
+   */
+  decoder?: (s: string) => string
+  /**
+   * if `true`, it will attempt to use `decodeURI` first.
+   *
+   * Set to `"inherit"` to use `decoder`
+   *
+   * @default false
+   */
+  decodeBaseUrl?: boolean | 'inherit' | ((s: string) => string)
 }
 
 /**
@@ -132,7 +171,7 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
     disallowedRegex = [],
     throws = [],
     replaceMap = {},
-    encoder,
+    encoder = encodeURIComponent,
   } = opts
   if (allowNonAscii) {
     allowedRegex.push(NON_ASCII)
@@ -179,11 +218,11 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
 
       if (replaceRegex && Object.keys(replaceMap).some((k) => c.includes(k))) {
         return c.replace(replaceRegex, (c0) => {
-          return replaceMap[c0] || (encoder || encodeURIComponent)(c0)
+          return replaceMap[c0] || encoder(c0)
         })
       }
 
-      return (encoder || encodeURIComponent)(c)
+      return encoder(c)
     })
     .join('')
 }
@@ -223,7 +262,37 @@ export function makeUrl(urlParts: IURLParts, opts: IEncodeOptions = {}) {
   return (base.endsWith('/') ? base.slice(0, -1) : base) + u
 }
 
-export function parseUrl(s: string): IURLParts {
+export function parseUrl(s: string, opts: IDecodeOptions = {}): IURLParts {
+  const {
+    replaceMap = {},
+    decoder: _decoder = decodeURIComponent,
+    decodeBaseUrl: _decodeBaseUrl = false,
+  } = opts
+  const decoder = Object.keys(replaceMap).length
+    ? (s: string) => {
+        const replaceRegex = Object.keys(replaceMap).length
+          ? new RegExp(
+              `(${Object.keys(replaceMap).map(escapeRegExp).join('|')})`
+            )
+          : null
+
+        if (replaceRegex) {
+          return s.replace(replaceRegex, (s0) => {
+            return replaceMap[s0] || _decoder(s0)
+          })
+        }
+
+        return _decoder(s)
+      }
+    : _decoder
+  const decodeBaseUrl = _decodeBaseUrl
+    ? _decodeBaseUrl === 'inherit'
+      ? decoder
+      : typeof _decodeBaseUrl === 'function'
+      ? _decodeBaseUrl
+      : decodeURI
+    : (s: string) => s
+
   const URL =
     typeof window !== 'undefined'
       ? window.URL
@@ -252,11 +321,11 @@ export function parseUrl(s: string): IURLParts {
   const segments = url.pathname
     .split('/')
     .filter((el) => el)
-    .map((el) => decodeURIComponent(el))
-  const hash = decodeURIComponent(url.hash.replace(/^#/, ''))
+    .map((el) => decoder(el))
+  const hash = decoder(url.hash.replace(/^#/, ''))
 
   const output: IURLParts = {
-    base: url.origin !== dummyBaseURL ? decodeURI(url.origin) : undefined,
+    base: url.origin !== dummyBaseURL ? decodeBaseUrl(url.origin) : undefined,
     segments: segments.length ? segments : undefined,
     query: Object.keys(query).length ? query : undefined,
     hash: hash || undefined,
