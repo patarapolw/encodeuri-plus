@@ -1,6 +1,6 @@
 {
   "name": "encodeuri-plus",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "files": [
     "lib",
@@ -23,7 +23,6 @@
     "querystring"
   ],
   "scripts": {
-    "engine-strict": "echo 'engine-strict=true' >> .npmrc",
     "build": "tsc -p src/tsconfig.json",
     "browserify": "parcel build -d lib -o index.umd.js ./browser.ts",
     "web": "parcel web/index.html",
