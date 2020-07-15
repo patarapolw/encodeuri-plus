@@ -1,15 +1,12 @@
-// @ts-check
-/* global encodeURIPlus */
-
-const {
+import {
+  encodeHash,
   encodePath,
   encodeQueryKey,
   encodeQueryValue,
-  encodeHash,
+  IURLParts,
   makeUrl,
   parseUrl,
-  // @ts-ignore
-} = encodeURIPlus
+} from '../src'
 
 const KEYBOARD_EVENT = 'input'
 
@@ -23,16 +20,15 @@ document.querySelectorAll('input[aria-label^="url-"]').forEach((inp) => {
 
 buildUrl()
 
-/**
- *
- * @param {KeyboardEvent} evt
- */
-function repeaterListener(evt) {
+function repeaterListener(evt: Event) {
   const { target } = evt
 
   if (target instanceof HTMLInputElement && target.value) {
     const repeater = target.closest('li')
-    const { parentElement } = repeater
+    const { parentElement } = repeater || {}
+    if (!repeater || !parentElement) {
+      return
+    }
 
     target.removeEventListener(KEYBOARD_EVENT, repeaterListener)
 
@@ -54,11 +50,7 @@ function repeaterListener(evt) {
   }
 }
 
-/**
- *
- * @param {KeyboardEvent} evt
- */
-function encodeListener(evt) {
+function encodeListener(evt: Event) {
   const { target } = evt
   if (!(target instanceof HTMLInputElement)) {
     return
@@ -69,25 +61,22 @@ function encodeListener(evt) {
     return
   }
 
-  const label = target.getAttribute('aria-label')
-  const handler = {
+  const label = target.getAttribute('aria-label') || ''
+
+  const handler: Record<string, (s: string, opts?: any) => string> = {
     'url-segment': encodePath,
     'url-qs-key': encodeQueryKey,
     'url-qs-value': encodeQueryValue,
     'url-hash': encodeHash,
-  }[label]
+  }
 
-  if (!handler) {
+  if (!handler[label]) {
     return
   }
 
-  let result = ''
-  try {
-    result = handler(target.value)
-  } catch (e) {
-    alert(e.message)
-    // throw e
-  }
+  const result = handler[label](target.value, {
+    onError: (e: Error) => console.error(e.message),
+  })
   const output = section.querySelector('code')
   if (output) {
     output.innerText = result
@@ -96,36 +85,18 @@ function encodeListener(evt) {
   buildUrl({ label, raw: target.value, result })
 }
 
-/**
- *
- * @param {object} [pre={}]
- * @param {string} [pre.label]
- * @param {string} [pre.raw]
- * @param {string} [pre.result]
- */
-function buildUrl(pre = {}) {
-  const urlParams = {
-    segments: [],
-    /**
-     * @type {Record<string, string | string[]>}
-     */
-    query: {},
-    /**
-     * @type {string | undefined}
-     */
-    hash: undefined,
-  }
+function buildUrl(pre?: { label: string; raw: string; result: string }) {
+  const urlParams: IURLParts = {}
+
   let lastQueryKey = ''
   let isQueryKeyLast = false
-  let isOrphan = false
   let errorMessage = ''
 
   document.querySelectorAll('input[aria-label^="url-"]').forEach((inp) => {
-    const currentLabel = inp.getAttribute('aria-label')
+    const currentLabel = inp.getAttribute('aria-label') || ''
 
     if (inp instanceof HTMLInputElement) {
       if (currentLabel === 'url-qs-value' && inp.value && !isQueryKeyLast) {
-        isOrphan = true
         return
       }
 
@@ -136,20 +107,16 @@ function buildUrl(pre = {}) {
         isQueryKeyLast = false
       }
 
-      const handler = {
-        /**
-         * @type {(s: string) => void}
-         */
+      const handler: Record<string, (s: string) => void> = {
         'url-segment': (s) => {
           if (s) {
+            urlParams.segments = urlParams.segments || []
             urlParams.segments.push(s)
           }
         },
-        /**
-         * @type {(s: string) => void}
-         */
         'url-qs-value': (s) => {
           if (lastQueryKey) {
+            urlParams.query = urlParams.query || {}
             const previousValue = urlParams.query[lastQueryKey]
             /**
              * Can also push empty value
@@ -170,31 +137,30 @@ function buildUrl(pre = {}) {
             lastQueryKey = ''
           }
         },
-        /**
-         * @type {(s: string) => void}
-         */
         'url-hash': (s) => {
-          /**
-           * Nullify if empty
-           */
-          urlParams.hash = s || undefined
+          if (s) {
+            urlParams.hash = s
+          }
         },
-      }[currentLabel]
+      }
 
-      if (handler) {
-        handler(inp.value)
+      if (handler[currentLabel]) {
+        handler[currentLabel](inp.value)
       }
     }
   })
 
-  const u = makeUrl(urlParams)
-  const { segments, query, hash, url } = parseUrl(u)
+  /**
+   * Error already broadcasted in another function
+   */
+  const u = makeUrl(urlParams, { onError: false })
+  // @ts-ignore
+  const { segments, query, hash, url } = parseUrl(u, {
+    onError: (e) => console.error(e.message),
+  })
 
   document.querySelectorAll('[data-output]').forEach((el) => {
     if (el instanceof HTMLElement) {
-      // @ts-ignore
-      const { Prism } = window
-
       const outputType = el.getAttribute('data-output')
 
       if (outputType === 'full') {
@@ -203,29 +169,29 @@ function buildUrl(pre = {}) {
       }
 
       if (outputType === 'search') {
-        const possible = new Set()
-        if (pre.label === 'url-qs-key') {
-          Object.keys(query).map((k) => possible.add(k))
-        } else if (pre.label === 'url-qs-value') {
-          Object.entries(query)
-            .filter(([k]) => k)
-            .map(([, vs]) => (Array.isArray(vs) ? vs : [vs]))
-            .reduce((prev, c) => [...prev, ...c], [])
-            .map((v) => possible.add(v))
-        }
+        if (pre && query) {
+          const possible = new Set<string>()
 
-        if (possible.size) {
-          const decodedValue = decodeURIComponent(pre.result)
-          if (decodedValue !== pre.raw || !possible.has(decodedValue)) {
-            errorMessage = `Some of the query are mis-parsed: ${pre.result}`
+          if (pre.label === 'url-qs-key') {
+            Object.keys(query).map((k) => possible.add(k))
+          } else if (pre.label === 'url-qs-value') {
+            Object.entries(query)
+              .filter(([k]) => k)
+              .map(([, vs]) => (Array.isArray(vs) ? vs : [vs]))
+              .reduce((prev, c) => [...prev, ...c], [])
+              .map((v) => possible.add(v))
+          }
+
+          if (possible.size) {
+            const decodedValue = decodeURIComponent(pre.result)
+            if (decodedValue !== pre.raw || !possible.has(decodedValue)) {
+              errorMessage = `Some of the query are mis-parsed: ${pre.result}`
+            }
           }
         }
 
         if (el.tagName === 'CODE') {
           el.innerText = query ? JSON.stringify(query, null, 2) : ''
-          if (Prism && el.innerText) {
-            Prism.highlightElement(el)
-          }
         } else {
           el.innerText = url.search
         }
@@ -233,21 +199,15 @@ function buildUrl(pre = {}) {
       }
 
       if (outputType === 'pathname') {
-        if (pre.label === 'url-segment') {
+        if (pre && pre.label === 'url-segment') {
           const decodedValue = decodeURIComponent(pre.result)
-          if (
-            decodedValue !== pre.raw ||
-            (segments && !segments.includes(pre.raw))
-          ) {
+          if (decodedValue !== pre.raw || !(segments || []).includes(pre.raw)) {
             errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
           }
         }
 
         if (el.tagName === 'CODE') {
           el.innerText = segments ? JSON.stringify(segments) : ''
-          if (Prism && el.innerText) {
-            Prism.highlightElement(el)
-          }
         } else {
           el.innerText = url.pathname !== '/' ? url.pathname : ''
         }
@@ -256,7 +216,7 @@ function buildUrl(pre = {}) {
       }
 
       if (outputType === 'hash') {
-        if (pre.label === 'url-hash') {
+        if (pre && pre.label === 'url-hash') {
           const decodedValue = decodeURIComponent(pre.result)
           if (decodedValue !== pre.raw || (hash && hash !== decodedValue)) {
             errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
@@ -265,9 +225,6 @@ function buildUrl(pre = {}) {
 
         if (el.tagName === 'CODE') {
           el.innerText = hash || ''
-          if (Prism && el.innerText) {
-            Prism.highlightElement(el)
-          }
         } else {
           el.innerText = url.hash
         }

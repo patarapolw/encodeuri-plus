@@ -22,25 +22,27 @@ export interface IEncodeOptions {
   /**
    * Do not encode
    */
-  allowed?: string[]
-  allowedRegex?: RegExp[]
+  keep?: (string | RegExp)[]
   /**
-   * Do encode, if possible
+   * forceEncode with `encodeAlways` function
    */
-  disallowed?: string[]
-  disallowedRegex?: RegExp[]
+  forceEncode?: (string | RegExp)[]
   /**
    * Throw error if matches
    */
   throws?: (string | RegExp)[]
   /**
-   * Extra replaceMap beyond `encoder`
-   */
-  replaceMap?: Record<string, string>
-  /**
-   * @default encodeURIComponent
+   * `encodeURI` is required to make RESERVED set work by default.
+   *
+   * However, it is enhanced with `forceEncode`
+   *
+   * @default encodeURI
    */
   encoder?: (s: string) => string
+  /**
+   * Set to `false` to disable error
+   */
+  onError?: boolean | ((e: Error) => any)
 }
 ```
 

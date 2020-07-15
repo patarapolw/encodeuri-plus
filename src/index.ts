@@ -37,39 +37,35 @@ export interface IEncodeOptions {
   /**
    * Do not encode
    */
-  allowed?: string[]
+  keep?: (string | RegExp)[]
   /**
-   * Do not encode
+   * forceEncode with `encodeAlways` function
    */
-  allowedRegex?: RegExp[]
-  /**
-   * Do encode, if possible
-   */
-  disallowed?: string[]
-  /**
-   * Do encode, if possible
-   */
-  disallowedRegex?: RegExp[]
+  forceEncode?: (string | RegExp)[]
   /**
    * Throw error if matches
    */
   throws?: (string | RegExp)[]
   /**
-   * Extra replaceMap beyond `encoder`
-   */
-  replaceMap?: Record<string, string>
-  /**
-   * @default encodeURIComponent
+   * `encodeURI` is required to make RESERVED set work by default.
+   *
+   * However, it is enhanced with `forceEncode`
+   *
+   * @default encodeURI
    */
   encoder?: (s: string) => string
+  /**
+   * Set to `false` to disable error
+   */
+  onError?: boolean | ((e: Error) => any)
 }
 
 export interface IDecodeOptions {
   /**
-   * Extra replaceMap beyond decodeURIComponent
-   */
-  replaceMap?: Record<string, string>
-  /**
+   * Decoder with always run on URI Components, which decodes all percent encoded
+   *
+   * `decodeURI` will not decode these, `#$&+,/:;=?@`
+   *
    * @default decodeURIComponent
    */
   decoder?: (s: string) => string
@@ -81,6 +77,12 @@ export interface IDecodeOptions {
    * @default false
    */
   decodeBaseUrl?: boolean | 'inherit' | ((s: string) => string)
+  /**
+   * In particular, `%`
+   *
+   * Set to `false` to disable error
+   */
+  onError?: boolean | ((e: Error) => any)
 }
 
 /**
@@ -93,13 +95,7 @@ export interface IDecodeOptions {
  * But not '...'
  */
 export function encodePath(s: string, opts: IEncodeOptions = {}) {
-  const {
-    disallowed = [],
-    allowNonAscii = true,
-    allowedRegex = [],
-    throws = [],
-    ...remaining
-  } = opts
+  const { forceEncode = [], throws = [], ...remaining } = opts
   const { encoder } = remaining
   if (!encoder || [encodeURI, encodeURIComponent].includes(encoder)) {
     throws.push(/^\.{1,2}$/)
@@ -107,23 +103,16 @@ export function encodePath(s: string, opts: IEncodeOptions = {}) {
 
   return encode(s, {
     ...remaining,
-    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('pathname')],
+    forceEncode: [...forceEncode, ...URL_CONSTRUCTOR_UNSAFE.get('pathname')],
     throws,
-    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
   })
 }
 
 export function encodeQueryKey(s: string, opts: IEncodeOptions = {}) {
-  const {
-    disallowed = [],
-    allowNonAscii = true,
-    allowedRegex = [],
-    ...remaining
-  } = opts
+  const { forceEncode = [], ...remaining } = opts
   return encode(s, {
     ...remaining,
-    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('key')],
-    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
+    forceEncode: [...forceEncode, ...URL_CONSTRUCTOR_UNSAFE.get('key')],
   })
 }
 
@@ -131,98 +120,131 @@ export function encodeQueryKey(s: string, opts: IEncodeOptions = {}) {
  * You might also want to disallow '=', if that makes your parsing harder.
  */
 export function encodeQueryValue(s: string, opts: IEncodeOptions = {}) {
-  const {
-    allowNonAscii = true,
-    allowed = [],
-    disallowed = [],
-    allowedRegex = [],
-    ...remaining
-  } = opts
+  const { forceEncode = [], ...remaining } = opts
   return encode(s, {
     ...remaining,
-    allowed: [...allowed, ...RESERVED],
-    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('value')],
-    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
+    forceEncode: [...forceEncode, ...URL_CONSTRUCTOR_UNSAFE.get('value')],
   })
 }
 
 export function encodeHash(s: string, opts: IEncodeOptions = {}) {
-  const {
-    allowNonAscii = true,
-    allowed = [],
-    disallowed = [],
-    allowedRegex = [],
-    ...remaining
-  } = opts
+  const { forceEncode = [], ...remaining } = opts
   return encode(s, {
     ...remaining,
-    allowed: [...allowed, ...RESERVED],
-    disallowed: [...disallowed, ...URL_CONSTRUCTOR_UNSAFE.get('hash')],
-    allowedRegex: allowNonAscii ? [...allowedRegex, NON_ASCII] : allowedRegex,
+    forceEncode: [...forceEncode, ...URL_CONSTRUCTOR_UNSAFE.get('hash')],
   })
 }
 
 export function encode(s: string, opts: IEncodeOptions = {}) {
   const {
     allowNonAscii = true,
-    allowed = [],
-    disallowed = [],
-    allowedRegex = [],
-    disallowedRegex = [],
+    keep = [],
+    forceEncode = [],
     throws = [],
-    replaceMap = {},
-    encoder = encodeURIComponent,
+    encoder = encodeURI,
   } = opts
-  if (allowNonAscii) {
-    allowedRegex.push(NON_ASCII)
-  }
 
-  const allowedSet = new Set(allowed)
-  const disallowedSet = new Set(disallowed)
-
-  if (disallowed.length) {
-    disallowed.map((el) => allowedSet.delete(el))
-  }
+  const onError =
+    typeof opts.onError === 'function'
+      ? opts.onError
+      : opts.onError === false
+      ? (_: Error) => null
+      : (e: Error) => {
+          throw e
+        }
 
   if (throws.some((t) => s.match(t))) {
-    throw new Error(`${s} is not allowed.`)
+    onError(new Error(`${s} is not allowed.`))
   }
 
-  let cs: string[] = [s]
-
-  if (allowedSet.size) {
-    cs = cs.flatMap((c) => {
-      return c.split(
-        new RegExp(`(${Array.from(allowedSet).map(escapeRegExp).join('|')})`)
-      )
-    })
+  if (allowNonAscii) {
+    keep.push(NON_ASCII)
   }
 
-  allowedRegex.map((re) => {
-    cs = cs.flatMap((c) => c.split(new RegExp(`(${re.source})`, re.flags)))
-  })
+  interface ISegment {
+    raw: string
+    doEncode?: boolean
+    result?: string
+  }
 
-  const replaceRegex = Object.keys(replaceMap).length
-    ? new RegExp(`(${Object.keys(replaceMap).map(escapeRegExp).join('|')})`)
-    : null
+  let segments: ISegment[] = [{ raw: s }]
 
-  return cs
-    .flatMap((c) => {
-      if (
-        !disallowedSet.has(c) &&
-        !disallowedRegex.some((re) => re.test(c)) &&
-        (allowedSet.has(c) || allowedRegex.some((re) => re.test(c)))
-      ) {
-        return c
-      }
-
-      if (replaceRegex && Object.keys(replaceMap).some((k) => c.includes(k))) {
-        return c.replace(replaceRegex, (c0) => {
-          return replaceMap[c0] || encoder(c0)
+  ;(() => {
+    const splitter = (re: RegExp) => {
+      segments = segments.flatMap((seg) => {
+        return seg.raw.split(re).map((s) => {
+          return {
+            raw: s,
+            doEncode: !re.test(s),
+          }
         })
+      })
+    }
+
+    const regexParts: string[] = []
+    for (const re of keep
+      .filter((s) => {
+        if (typeof s === 'string') {
+          regexParts.push(s)
+          return false
+        }
+
+        return true
+      })
+      .map((el) => el as RegExp)) {
+      splitter(new RegExp(`(${re.source})`, re.flags))
+    }
+
+    if (regexParts.length) {
+      splitter(new RegExp(`(${regexParts.map(escapeRegExp).join('|')})`, 'g'))
+    }
+  })()
+  ;(() => {
+    const splitter = (re: RegExp) => {
+      segments = segments.flatMap((seg) => {
+        if (seg.doEncode === false) {
+          return [seg]
+        }
+
+        return seg.raw.split(re).map((s) => {
+          return {
+            raw: s,
+            result: re.test(s) ? encodeAlways(s) : undefined,
+          }
+        })
+      })
+    }
+
+    const regexParts: string[] = []
+    for (const re of forceEncode
+      .filter((s) => {
+        if (typeof s === 'string') {
+          regexParts.push(s)
+          return false
+        }
+
+        return true
+      })
+      .map((el) => el as RegExp)) {
+      splitter(new RegExp(`(${re.source})`, re.flags))
+    }
+
+    if (regexParts.length) {
+      splitter(new RegExp(`(${regexParts.map(escapeRegExp).join('|')})`, 'g'))
+    }
+  })()
+
+  return segments
+    .map(({ raw, doEncode, result }) => {
+      if (typeof result === 'string') {
+        return result
       }
 
-      return encoder(c)
+      if (doEncode === false) {
+        return raw
+      }
+
+      return encoder(raw)
     })
     .join('')
 }
@@ -263,35 +285,47 @@ export function makeUrl(urlParts: IURLParts, opts: IEncodeOptions = {}) {
 }
 
 export function parseUrl(s: string, opts: IDecodeOptions = {}): IURLParts {
-  const {
-    replaceMap = {},
-    decoder: _decoder = decodeURIComponent,
-    decodeBaseUrl: _decodeBaseUrl = false,
-  } = opts
-  const decoder = Object.keys(replaceMap).length
-    ? (s: string) => {
-        const replaceRegex = Object.keys(replaceMap).length
-          ? new RegExp(
-              `(${Object.keys(replaceMap).map(escapeRegExp).join('|')})`
-            )
-          : null
-
-        if (replaceRegex) {
-          return s.replace(replaceRegex, (s0) => {
-            return replaceMap[s0] || _decoder(s0)
-          })
+  const onError =
+    typeof opts.onError === 'function'
+      ? opts.onError
+      : opts.onError === false
+      ? (_: Error) => null
+      : (e: Error) => {
+          throw e
         }
 
-        return _decoder(s)
-      }
-    : _decoder
-  const decodeBaseUrl = _decodeBaseUrl
-    ? _decodeBaseUrl === 'inherit'
+  let decoder = opts.decoder || decodeURIComponent
+
+  let decodeBaseUrl =
+    typeof opts.decodeBaseUrl === 'function'
+      ? opts.decodeBaseUrl
+      : opts.decodeBaseUrl === 'inherit'
       ? decoder
-      : typeof _decodeBaseUrl === 'function'
-      ? _decodeBaseUrl
-      : decodeURI
-    : (s: string) => s
+      : opts.decodeBaseUrl
+      ? decodeURI
+      : (s: string) => s
+
+  if (onError) {
+    const _decoder = decoder
+    decoder = (s) => {
+      try {
+        return _decoder(s)
+      } catch (e) {
+        onError(e)
+      }
+      return s
+    }
+
+    const _decodeBaseUrl = decodeBaseUrl
+    decodeBaseUrl = (s) => {
+      try {
+        return _decodeBaseUrl(s)
+      } catch (e) {
+        onError(e)
+      }
+      return s
+    }
+  }
 
   const URL =
     typeof window !== 'undefined'
@@ -332,6 +366,19 @@ export function parseUrl(s: string, opts: IDecodeOptions = {}): IURLParts {
   }
 
   return Object.assign(JSON.parse(JSON.stringify(output)), { url })
+}
+
+/**
+ * Percent-encoding a reserved character involves converting the character to its corresponding byte value in ASCII and then representing that value as a pair of hexadecimal digits. The digits, preceded by a percent sign (%) which is used as an escape character, are then used in the URI in place of the reserved character.
+ *
+ * (For a non-ASCII character, it is typically converted to its byte sequence in UTF-8, and then each byte value is represented as above.)
+ * @see https://en.wikipedia.org/wiki/Percent-encoding
+ */
+export function encodeAlways(s: string) {
+  return s
+    .split('')
+    .map((x) => `%${x.charCodeAt(0).toString(16).toUpperCase()}`)
+    .join('')
 }
 
 /**

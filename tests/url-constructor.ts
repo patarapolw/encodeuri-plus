@@ -82,16 +82,17 @@ const urlConstructorStatus = cs
       ;['pathname', 'key', 'value', 'hash'].map((type) => {
         const it: any = prev[type] || {}
         ;['encoded', 'destroyed', 'error'].map((status) => {
-          let cs: string = it[status] || ''
+          let cs = it[status]
           if (status === 'encoded' && current[type] === 'encoded') {
-            cs += current.c
+            cs = (cs || '') + current.c
+            it[status] = cs
           } else if (status === 'destroyed' && current[type] === false) {
-            cs += current.c
+            cs = (cs || '') + current.c
+            it[status] = cs
           } else if (status === 'error' && current[type] instanceof Error) {
-            cs += current.c
-          }
-
-          if (cs.length) {
+            const { message } = current[type]
+            cs = cs || {}
+            cs[message] = (cs[message] || '') + current.c
             it[status] = cs
           }
         })
@@ -105,23 +106,65 @@ const urlConstructorStatus = cs
       {
         encoded?: string
         destroyed?: string
-        error?: string
+        error?: Record<string, string>
       }
     >
   )
 
-const notEncoded = Object.values(urlConstructorStatus)
-  .reduce(
-    (prev, { destroyed = '', error = '' }) => [...prev, ...destroyed, ...error],
-    [] as string[]
+const getNotEncoded = (fn: (s: string) => string) => {
+  return (
+    cs
+      .map(({ c }) => c)
+      .filter((c) => !/[A-Za-z0-9]/.test(c))
+      .filter((c) => {
+        return fn(c) === c
+      })
+      .join('') || undefined
   )
-  .filter((c, i, arr) => arr.indexOf(c) === i)
-  .filter((c) => {
-    return encodeURIComponent(c) === c
-  })
-  .join('')
+}
+
+const getNotDecoded = (
+  decodeFn: (s: string) => string,
+  encodeFn: (s: string) => string
+) => {
+  return (
+    cs
+      .filter(({ c }) => !/[A-Za-z0-9]/.test(c))
+      .filter(({ c }) => {
+        const encoded = encodeFn(c)
+        return decodeFn(encoded) === encoded
+      })
+      .map(({ c }) => c)
+      .join('') || undefined
+  )
+}
+
+/**
+ * Percent-encoding a reserved character involves converting the character to its corresponding byte value in ASCII and then representing that value as a pair of hexadecimal digits. The digits, preceded by a percent sign (%) which is used as an escape character, are then used in the URI in place of the reserved character. (For a non-ASCII character, it is typically converted to its byte sequence in UTF-8, and then each byte value is represented as above.)
+ * @see https://en.wikipedia.org/wiki/Percent-encoding
+ */
+const encodeAll = (s: string) =>
+  s
+    .split('')
+    .map((x) => `%${x.charCodeAt(0).toString(16).toUpperCase()}`)
+    .join('')
 
 fs.writeFileSync(
   'tests/url-constructor.out.json',
-  JSON.stringify(Object.assign(urlConstructorStatus, { notEncoded }), null, 2)
+  JSON.stringify(
+    Object.assign(urlConstructorStatus, {
+      notEncoded: {
+        encodeURI: getNotEncoded(encodeURI),
+        encodeURIComponent: getNotEncoded(encodeURIComponent),
+        escape: getNotEncoded(escape),
+        encodeAll: getNotEncoded(encodeAll),
+      },
+      notDecoded: {
+        decodeURI: getNotDecoded(decodeURI, encodeAll),
+        decodeURIComponent: getNotDecoded(decodeURIComponent, encodeAll),
+      },
+    }),
+    null,
+    2
+  )
 )

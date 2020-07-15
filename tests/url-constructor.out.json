@@ -2,7 +2,10 @@
   "pathname": {
     "destroyed": " #.?",
     "encoded": "\"<>`{}",
-    "error": "/\\"
+    "error": {
+      "Invalid URL: //": "/",
+      "Invalid URL: /\\": "\\"
+    }
   },
   "key": {
     "destroyed": "#&+="
@@ -14,5 +17,12 @@
     "destroyed": " ",
     "encoded": "\"<>`"
   },
-  "notEncoded": "."
+  "notEncoded": {
+    "encodeURI": "!#$&'()*+,-./:;=?@_~",
+    "encodeURIComponent": "!'()*-._~",
+    "escape": "*+-./@_"
+  },
+  "notDecoded": {
+    "decodeURI": "#$&+,/:;=?@"
+  }
 }
