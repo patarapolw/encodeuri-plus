@@ -24,7 +24,7 @@ export interface IEncodeOptions {
   throws?: (string | RegExp)[]
   replaceMap?: Record<string, string>
   /**
-   * Default is encodeURIComponent
+   * @default encodeURIComponent
    */
   encoder?: (s: string) => string
 }

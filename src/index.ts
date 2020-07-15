@@ -39,7 +39,7 @@ export interface IEncodeOptions {
   throws?: (string | RegExp)[]
   replaceMap?: Record<string, string>
   /**
-   * Default is encodeURIComponent
+   * @default encodeURIComponent
    */
   encoder?: (s: string) => string
 }
@@ -163,6 +163,10 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
     cs = cs.flatMap((c) => c.split(new RegExp(`(${re.source})`, re.flags)))
   })
 
+  const replaceRegex = Object.keys(replaceMap).length
+    ? new RegExp(`(${Object.keys(replaceMap).map(escapeRegExp).join('|')})`)
+    : null
+
   return cs
     .flatMap((c) => {
       if (
@@ -175,11 +179,10 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
 
       console.log(c, replaceMap)
 
-      if (Object.keys(replaceMap).some((k) => c.includes(k))) {
-        return c
-          .split('')
-          .map((c0) => replaceMap[c0] || (encoder || encodeURIComponent)(c0))
-          .join('')
+      if (replaceRegex && Object.keys(replaceMap).some((k) => c.includes(k))) {
+        return c.replace(replaceRegex, (c0) => {
+          return replaceMap[c0] || (encoder || encodeURIComponent)(c0)
+        })
       }
 
       return (encoder || encodeURIComponent)(c)
@@ -249,17 +252,20 @@ export function parseUrl(s: string): IURLParts {
     return qs
   })({})
 
-  return {
-    base: url.origin === dummyBaseURL ? undefined : decodeURI(url.origin),
-    segments: url.pathname
-      .split('/')
-      .filter((el) => el)
-      .map((el) => decodeURIComponent(el)),
-    query,
-    hash: decodeURIComponent(url.hash.replace(/^#/, '')),
-    // @ts-ignore
-    url,
+  const segments = url.pathname
+    .split('/')
+    .filter((el) => el)
+    .map((el) => decodeURIComponent(el))
+  const hash = decodeURIComponent(url.hash.replace(/^#/, ''))
+
+  const output: IURLParts = {
+    base: url.origin !== dummyBaseURL ? decodeURI(url.origin) : undefined,
+    segments: segments.length ? segments : undefined,
+    query: Object.keys(query).length ? query : undefined,
+    hash: hash || undefined,
   }
+
+  return Object.assign(JSON.parse(JSON.stringify(output)), { url })
 }
 
 /**

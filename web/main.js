@@ -218,9 +218,7 @@ function buildUrl(pre = {}) {
         }
 
         if (el.tagName === 'CODE') {
-          el.innerText = Object.keys(query).length
-            ? JSON.stringify(query, null, 2)
-            : ''
+          el.innerText = query ? JSON.stringify(query, null, 2) : ''
         } else {
           el.innerText = url.search
         }
@@ -236,9 +234,9 @@ function buildUrl(pre = {}) {
         }
 
         if (el.tagName === 'CODE') {
-          el.innerText = segments.length ? JSON.stringify(segments) : ''
+          el.innerText = segments ? JSON.stringify(segments) : ''
         } else {
-          el.innerText = url.pathname
+          el.innerText = url.pathname !== '/' ? url.pathname : ''
         }
         return
       }
