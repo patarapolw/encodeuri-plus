@@ -2,11 +2,12 @@
   margin-bottom: 1rem;
 }
 
-code.output {
+code {
   width: 100%;
   display: block;
   min-height: 2em;
   word-break: break-all;
+  white-space: pre-wrap;
 }
 
 li section {

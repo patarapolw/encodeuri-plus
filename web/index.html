@@ -60,20 +60,20 @@
       <pre><code data-output="full"></code></pre>
 
       <h3>Parsed URL</h3>
-      <small>Based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties</small>
+      <small>Based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties, parsed and validated with decodeURIComponent</small>
       <blockquote class="parsed-url">
-        <h4>Pathname</h4>
+        <h4>Path segments (pathname)</h4>
         <pre><code data-output="pathname"></code></pre>
+        <small data-output="pathname"></small>
 
-        <h4>Search (Querystring)</h4>
-        <pre><code data-output="search"></code></pre>
-
-        <h4>Parsed querystring</h4>
+        <h4>Querystring (search)</h4>
         <small><a href="https://github.com/patarapolw/encodeuri-plus/blob/master/web/main.js#L202" target="_blank" rel="noopener noreferrer">Looping</a> through <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams" target="_blank" rel="noopener noreferrer">URL.searchPararms</a></small>
-        <pre><code data-output="qs"></code></pre>
+        <pre><code data-output="search"></code></pre>
+        <small data-output="search"></small>
 
-        <h4>Hash (fragment)</h4>
+        <h4>Fragment (hash)</h4>
         <pre><code data-output="hash"></code></pre>
+        <small data-output="hash"></small>
       </blockquote>
     </article>
   </section>

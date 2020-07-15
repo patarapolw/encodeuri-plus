@@ -91,12 +91,12 @@ function encodeListener(evt) {
 
 /**
  *
- * @param {object} [warn={}]
- * @param {string} [warn.label]
- * @param {string} [warn.raw]
- * @param {string} [warn.result]
+ * @param {object} [pre={}]
+ * @param {string} [pre.label]
+ * @param {string} [pre.raw]
+ * @param {string} [pre.result]
  */
-function buildUrl(warn = {}) {
+function buildUrl(pre = {}) {
   const urlParams = {
     segments: [],
     /**
@@ -111,6 +111,7 @@ function buildUrl(warn = {}) {
   let lastQueryKey = ''
   let isQueryKeyLast = false
   let isOrphan = false
+  let errorMessage = ''
 
   document.querySelectorAll('input[aria-label^="url-"]').forEach((inp) => {
     const currentLabel = inp.getAttribute('aria-label')
@@ -182,16 +183,16 @@ function buildUrl(warn = {}) {
   const u = makeUrl(urlParams, { minimal: true })
   const url = new URL(u, 'https://www.example.com')
 
-  document.querySelectorAll('code[data-output]').forEach((code) => {
-    if (code instanceof HTMLElement) {
-      const outputType = code.getAttribute('data-output')
+  document.querySelectorAll('[data-output]').forEach((el) => {
+    if (el instanceof HTMLElement) {
+      const outputType = el.getAttribute('data-output')
 
       if (outputType === 'full') {
-        code.innerText = u
+        el.innerText = u
         return
       }
 
-      if (outputType === 'qs') {
+      if (outputType === 'search') {
         const possible = new Set()
 
         /**
@@ -201,11 +202,11 @@ function buildUrl(warn = {}) {
 
         for (const [k, v] of url.searchParams) {
           if (!isOrphan) {
-            if (warn.label === 'url-qs-key' && k) {
+            if (pre.label === 'url-qs-key' && k) {
               possible.add(k)
             }
 
-            if (warn.label === 'url-qs-value' && v) {
+            if (pre.label === 'url-qs-value' && v) {
               possible.add(v)
             }
           }
@@ -221,32 +222,66 @@ function buildUrl(warn = {}) {
           }
         }
 
-        console.log(isOrphan, possible, warn)
-
         if (possible.size) {
-          const decodedValue = decodeURIComponent(warn.result)
-          if (decodedValue !== warn.raw || !possible.has(decodedValue)) {
-            alert(`Some of the query are mis-parsed: ${warn.result}`)
+          const decodedValue = decodeURIComponent(pre.result)
+          if (decodedValue !== pre.raw || !possible.has(decodedValue)) {
+            errorMessage = `Some of the query are mis-parsed: ${pre.result}`
           }
         }
 
-        code.innerText = Object.keys(qs).length
-          ? JSON.stringify(qs, null, 2)
-          : ''
+        if (el.tagName === 'CODE') {
+          el.innerText = Object.keys(qs).length
+            ? JSON.stringify(qs, null, 2)
+            : ''
+        } else {
+          el.innerText = url.search
+        }
         return
       }
 
-      const segment = url[outputType]
-      if (typeof segment === 'string') {
-        if (outputType === 'hash' && warn.label === 'url-hash' && segment) {
-          const decodedValue = decodeURIComponent(warn.result)
-          if (decodedValue !== warn.raw || segment !== `#${warn.result}`) {
-            alert(`URL hash is mis-parsed: ${decodedValue}`)
+      if (outputType === 'pathname') {
+        const parsedPathname = url.pathname
+          .split('/')
+          .filter((s) => s)
+          .map((s) => decodeURIComponent(s))
+
+        if (pre.label === 'url-segment') {
+          const decodedValue = decodeURIComponent(pre.result)
+          if (decodedValue !== pre.raw || !parsedPathname.includes(pre.raw)) {
+            errorMessage = `Some of URL params are mis-parsed: ${pre.raw}`
           }
         }
 
-        code.innerText = segment
+        if (el.tagName === 'CODE') {
+          el.innerText = parsedPathname.length
+            ? JSON.stringify(parsedPathname)
+            : ''
+        } else {
+          el.innerText = url.pathname
+        }
+        return
+      }
+
+      if (outputType === 'hash') {
+        const parsedHash = decodeURIComponent(url.hash.replace(/^#/, ''))
+
+        if (url.hash && pre.label === 'url-hash') {
+          const decodedValue = decodeURIComponent(pre.result)
+          if (decodedValue !== pre.raw || parsedHash !== pre.raw) {
+            alert(`URL hash is mis-parsed: ${pre.raw}`)
+          }
+        }
+
+        if (el.tagName === 'CODE') {
+          el.innerText = parsedHash
+        } else {
+          el.innerText = url.hash
+        }
       }
     }
   })
+
+  if (errorMessage) {
+    alert(errorMessage)
+  }
 }

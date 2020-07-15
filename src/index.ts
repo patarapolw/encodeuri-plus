@@ -10,12 +10,14 @@ export const POTENTIALLY_USABLE = new RegExp(
 
 export interface IEncodeOptions {
   /**
-   * Do not encode if does not affect URL parser
+   * @default true
    */
-  minimal?: boolean
+  allowUnicode?: boolean
   allowed?: string[]
   disallowed?: string[]
   allowedRegex?: RegExp[]
+  disallowedRegex?: RegExp[]
+  replaceMap?: Record<string, string>
   /**
    * Default is encodeURIComponent
    */
@@ -23,20 +25,31 @@ export interface IEncodeOptions {
 }
 
 export function encodePath(s: string, opts: IEncodeOptions = {}) {
-  const { minimal, allowedRegex = [], ...remaining } = opts
+  const {
+    allowUnicode = true,
+    allowedRegex = [],
+    replaceMap = {},
+    ...remaining
+  } = opts
   return encode(s, {
     ...remaining,
-    allowedRegex: minimal
+    replaceMap: Object.assign(
+      {
+        '/': '%2F',
+      },
+      replaceMap
+    ),
+    allowedRegex: allowUnicode
       ? [...allowedRegex, POTENTIALLY_USABLE]
       : allowedRegex,
   })
 }
 
 export function encodeQueryKey(s: string, opts: IEncodeOptions = {}) {
-  const { minimal, allowedRegex = [], ...remaining } = opts
+  const { allowUnicode = true, allowedRegex = [], ...remaining } = opts
   return encode(s, {
     ...remaining,
-    allowedRegex: minimal
+    allowedRegex: allowUnicode
       ? [...allowedRegex, POTENTIALLY_USABLE]
       : allowedRegex,
   })
@@ -47,7 +60,7 @@ export function encodeQueryKey(s: string, opts: IEncodeOptions = {}) {
  */
 export function encodeQueryValue(s: string, opts: IEncodeOptions = {}) {
   const {
-    minimal,
+    allowUnicode = true,
     allowed = [],
     disallowed = [],
     allowedRegex = [],
@@ -57,18 +70,23 @@ export function encodeQueryValue(s: string, opts: IEncodeOptions = {}) {
     ...remaining,
     allowed: [...allowed, ...RESERVED],
     disallowed: [...disallowed, '&', '+'],
-    allowedRegex: minimal
+    allowedRegex: allowUnicode
       ? [...allowedRegex, POTENTIALLY_USABLE]
       : allowedRegex,
   })
 }
 
 export function encodeHash(s: string, opts: IEncodeOptions = {}) {
-  const { minimal, allowed = [], allowedRegex = [], ...remaining } = opts
+  const {
+    allowUnicode = true,
+    allowed = [],
+    allowedRegex = [],
+    ...remaining
+  } = opts
   return encode(s, {
     ...remaining,
     allowed: [...allowed, ...RESERVED],
-    allowedRegex: minimal
+    allowedRegex: allowUnicode
       ? [...allowedRegex, POTENTIALLY_USABLE]
       : allowedRegex,
   })
@@ -76,13 +94,15 @@ export function encodeHash(s: string, opts: IEncodeOptions = {}) {
 
 export function encode(s: string, opts: IEncodeOptions = {}) {
   const {
-    minimal,
+    allowUnicode = true,
     allowed = [],
     disallowed = [],
     allowedRegex = [],
+    disallowedRegex = [],
+    replaceMap = {},
     encoder,
   } = opts
-  if (minimal) {
+  if (allowUnicode) {
     allowedRegex.push(POTENTIALLY_USABLE)
   }
 
@@ -111,10 +131,19 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
     .flatMap((c) => {
       if (
         !disallowedSet.has(c) &&
+        !disallowedRegex.some((re) => re.test(c)) &&
         (allowedSet.has(c) || allowedRegex.some((re) => re.test(c)))
       ) {
-        return [c]
+        return c
       }
+
+      if (Object.keys(replaceMap).some((k) => c.includes(k))) {
+        return c
+          .split('')
+          .map((c0) => replaceMap[c0] || (encoder || encodeURIComponent)(c0))
+          .join('')
+      }
+
       return (encoder || encodeURIComponent)(c)
     })
     .join('')
@@ -131,7 +160,7 @@ export function makeUrl(
   const { segments = [], query = {}, hash } = urlParams
 
   let u = '/'
-  u += segments.map((s) => encodePath(s, opts))
+  u += segments.map((s) => encodePath(s, opts)).join('/')
 
   if (Object.keys(query).length) {
     u +=
