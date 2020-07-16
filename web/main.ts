@@ -168,7 +168,7 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
       }
 
       if (outputType === 'search') {
-        if (pre && pre.raw && query) {
+        if (pre && lastQueryKey && pre.raw && query) {
           const possible = new Set<string>()
 
           if (pre.label === 'url-qs-key') {
