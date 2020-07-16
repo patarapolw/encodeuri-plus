@@ -13,7 +13,7 @@ Minimally and safely encode URIComponents for use in shorter URLs. Avoid Percent
 ```ts
 interface IURLEncoderOptions {
   /**
-   * Do not encode non-ASCII
+   * Do not encode non-ASCII, i.e. `/[^\x00-\x7F]/`
    *
    * @default true
    */
@@ -23,7 +23,7 @@ interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `encodeURIComponent` and `HTMLEntityEncoder.encode`
+   * fallback with `encodeURIComponent` and `StarEncoder.encode`
    */
   forceEncode?: (string | RegExp)[]
   /**

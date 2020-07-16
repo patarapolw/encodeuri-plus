@@ -12,7 +12,7 @@ export interface IURLParts {
 
 export interface IURLEncoderOptions {
   /**
-   * Do not encode non-ASCII
+   * Do not encode non-ASCII, i.e. `/[^\x00-\x7F]/`
    *
    * @default true
    */
@@ -22,7 +22,7 @@ export interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `encodeURIComponent` and `HTMLEntityEncoder.encode`
+   * fallback with `encodeURIComponent` and `StarEncoder.encode`
    */
   forceEncode?: (string | RegExp)[]
   /**
@@ -98,8 +98,8 @@ export class URLEncoder {
     }
 
     let segments: ISegment[] = [{ raw: s }]
-    segments = this._parseKeep(segments, keep)
-    segments = this._parseForced(segments, forceEncode)
+    segments = this._parseKeep(segments, { keep })
+    segments = this._parseForced(segments, { forceEncode, encoder })
 
     return segments
       .map(({ raw, doEncode, result }) => {
@@ -128,7 +128,7 @@ export class URLEncoder {
       !(this.opts.keep && this.opts.keep.some((keep) => '.'.match(keep)))
     ) {
       return r.replace(
-        new RegExp(escapeRegExp(HTMLEntityEncoder.encode('.')), 'g'),
+        new RegExp(escapeRegExp(StarEncoder.encode('.')), 'g'),
         '.'
       )
     }
@@ -205,7 +205,7 @@ export class URLEncoder {
       decoderArray.push((s, type) => {
         return type === 'pathParam'
           ? s.replace(
-              new RegExp(escapeRegExp(HTMLEntityEncoder.encode('.')), 'g'),
+              new RegExp(escapeRegExp(StarEncoder.encode('.')), 'g'),
               '.'
             )
           : s
@@ -275,10 +275,7 @@ export class URLEncoder {
         }
   }
 
-  private _parseKeep(
-    segments: ISegment[],
-    keep: IURLEncoderOptions['keep'] = []
-  ) {
+  private _parseKeep(segments: ISegment[], opts: IURLEncoderOptions = {}) {
     const splitter = (re: RegExp) => {
       segments = segments.flatMap((seg) => {
         const m = seg.raw.match(re) || []
@@ -298,7 +295,7 @@ export class URLEncoder {
     }
 
     const regexParts: string[] = []
-    for (const re of keep
+    for (const re of (opts.keep || [])
       .filter((s) => {
         if (typeof s === 'string') {
           regexParts.push(s)
@@ -318,10 +315,7 @@ export class URLEncoder {
     return segments
   }
 
-  private _parseForced(
-    segments: ISegment[],
-    forceEncode: IURLEncoderOptions['forceEncode'] = []
-  ) {
+  private _parseForced(segments: ISegment[], opts: IURLEncoderOptions = {}) {
     const splitter = (re: RegExp) => {
       segments = segments.flatMap((seg) => {
         if (seg.doEncode === false || typeof seg.result === 'string') {
@@ -337,12 +331,12 @@ export class URLEncoder {
               raw: m[i],
               result: ((s: string) => {
                 for (const fn of [
+                  opts.encoder || encodeURI,
                   encodeURIComponent,
                   /**
                    * Yes, double encoded
                    */
-                  (s: string) =>
-                    encodeURIComponent(HTMLEntityEncoder.encode(s)),
+                  (s: string) => encodeURIComponent(StarEncoder.encode(s)),
                 ]) {
                   const r = fn(s)
                   if (r !== s) {
@@ -360,7 +354,7 @@ export class URLEncoder {
     }
 
     const regexParts: string[] = []
-    for (const re of forceEncode
+    for (const re of (opts.forceEncode || [])
       .filter((s) => {
         if (typeof s === 'string') {
           regexParts.push(s)
@@ -390,5 +384,46 @@ export const HTMLEntityEncoder = {
   },
   decode(s: string) {
     return s.replace(/&#(\d+);/g, (_, p1) => String.fromCharCode(parseInt(p1)))
+  },
+}
+
+/**
+ * Inspired by jsurl.js, released under MIT license
+ * @see https://github.com/Sage/jsurl/blob/master/lib/jsurl.js
+ */
+export const StarEncoder = {
+  encode(s: string) {
+    return (
+      s
+        .split('')
+        .map((ch) => {
+          const chNum = ch.charCodeAt(0)
+          // thanks to Douglas Crockford for the negative slice trick
+          return chNum < 0x100
+            ? '*' + ('00' + chNum.toString(16)).slice(-2)
+            : '**' + ('0000' + chNum.toString(16)).slice(-4)
+        })
+        .join('')
+        /**
+         * Force lowerCase, so that I decode only lowercase.
+         */
+        .toLocaleLowerCase()
+    )
+  },
+  decode(s: string) {
+    return s.replace(/(?:\*[0-9a-f]{2}|\*\*[0-9a-f]{4})/g, (p0) => {
+      try {
+        const charCode =
+          p0[1] === '*'
+            ? parseInt(p0.substr(2), 16)
+            : parseInt(p0.substr(1), 16)
+        if (charCode) {
+          return String.fromCharCode(charCode)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      return p0
+    })
   },
 }

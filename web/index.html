@@ -17,7 +17,7 @@
         <h3>Path segments</h3>
         <small>
           <p>
-            <a href="https://dev.to/patarapolw/dot-has-no-real-encoder-decoder-only-sanitizer-1749" target="_blank" rel="noopener noreferrer">Escaping <code>.</code> and <code>..</code></a>are now possible, with <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L331" target="_blank" rel="noopener noreferrer"><code>encodeURIComponent(HTMLEntityEncoder.encode('.'))</code></a>.
+            <a href="https://dev.to/patarapolw/dot-has-no-real-encoder-decoder-only-sanitizer-1749" target="_blank" rel="noopener noreferrer">Escaping <code>.</code> and <code>..</code></a>are now possible, with <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L331" target="_blank" rel="noopener noreferrer"><code>encodeURIComponent(StarEncoder.encode('.'))</code></a>.
           </p>
         </small>
         <ul class="repeatable">
@@ -82,7 +82,7 @@
           <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L184" target="_blank" rel="noopener noreferrer"><code>parseUrl</code> function</a>, based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties
         </p>
         <p>
-          Parsed and validated with <code>decodeURIComponent</code> (and <code>HTMLEntityEncoder.decode</code> in case of <code>.</code> in pathname)
+          Parsed and validated with <code>decodeURIComponent</code> (and <code>StarEncoder.decode</code> in case of <code>.</code> in pathname)
         </p>
       </small>
       <blockquote class="parsed-url">
