@@ -1,7 +1,6 @@
-export const RESERVED = ';,/?:@&=+$'.split('')
-export const UNRESERVED = /[A-Za-z0-9-_.~]/
-// eslint-disable-next-line no-control-regex
-export const NON_ASCII = /[^\x00-\x7F]/
+import { PercentEncoder } from './encoder'
+import { NON_ASCII } from './range'
+import { escapeRegExp } from './util'
 
 export const URL_CONSTRUCTOR_UNSAFE = {
   data: {
@@ -209,7 +208,7 @@ export function encode(s: string, opts: IEncodeOptions = {}) {
         return seg.raw.split(re).map((s) => {
           return {
             raw: s,
-            result: re.test(s) ? encodeAlways(s) : undefined,
+            result: re.test(s) ? PercentEncoder.encodeAlways(s) : undefined,
           }
         })
       })
@@ -366,25 +365,4 @@ export function parseUrl(s: string, opts: IDecodeOptions = {}): IURLParts {
   }
 
   return Object.assign(JSON.parse(JSON.stringify(output)), { url })
-}
-
-/**
- * Percent-encoding a reserved character involves converting the character to its corresponding byte value in ASCII and then representing that value as a pair of hexadecimal digits. The digits, preceded by a percent sign (%) which is used as an escape character, are then used in the URI in place of the reserved character.
- *
- * (For a non-ASCII character, it is typically converted to its byte sequence in UTF-8, and then each byte value is represented as above.)
- * @see https://en.wikipedia.org/wiki/Percent-encoding
- */
-export function encodeAlways(s: string) {
-  return s
-    .split('')
-    .map((x) => `%${x.charCodeAt(0).toString(16).toUpperCase()}`)
-    .join('')
-}
-
-/**
- * @see https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
- * @param s
- */
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // $& means the whole matched string
 }
