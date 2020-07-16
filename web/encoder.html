@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/holiday.css" />
+  <title>Comparing encoders</title>
+
+  <style>
+    code {
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Encoders showdown</h1>
+    <select name="preset" id="preset"></select>
+
+    <input type="text" name="q" id="q" style="display: none;"/>
+
+    <small class="notice" data-key="ERROR" style="display: none;">
+      <p>
+        See <a href="https://stackoverflow.com/questions/3856693/a-url-resource-that-is-a-dot-2e" target="_blank" rel="noopener noreferrer">a-url-resource-that-is-a-dot-2e</a> and <a href="https://stackoverflow.com/questions/3235219/urlencoded-forward-slash-is-breaking-url" target="_blank" rel="noopener noreferrer">urlencoded-forward-slash-is-breaking-url</a>.
+      </p>
+      <p>
+        A way to escape dot for URL could be HTML entity: <code>.</code> to/from <code>&amp;#46;</code>.
+      </p>
+      <p>
+        <code>encodeURI</code>, <code>encodeURIComponent</code>, <code>escape</code> or even <code>Element.innerText</code> do not encode.
+      </p>
+    </small>
+
+    <template>
+      <section data-lang="json">
+        <h2>JSON</h2>
+        <pre><code></code></pre>
+        <small>
+          <ul>
+            <template>
+              <li>
+                <p>encodeURI</p>
+                <pre><code data-encode="encodeURI"></code></pre>
+              </li>
+            </template>
+          </ul>
+        </small>
+      </section>
+    </template>
+
+    <article></article>
+  </main>
+
+  <script src="encoder.js"></script>
+</body>
+</html>

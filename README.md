@@ -8,7 +8,6 @@ Minimally and safely encode URIComponents for use in shorter URLs. Avoid Percent
 
 - Allow non-ASCII characters
 - Allow reserved characters in querystring values and hash
-- Some characters will break serialization-deserialization, therefore they have to be encoded, e.g. `#&+` in querystring values
 - Customizable options.
 
 ```ts
@@ -45,6 +44,10 @@ export interface IEncodeOptions {
   onError?: boolean | ((e: Error) => any)
 }
 ```
+
+## Caveats
+
+Path params seem to have to most limitations. Avoid `./\`, or encode it first.
 
 ## Usage
 
