@@ -5,3 +5,22 @@
 export function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // $& means the whole matched string
 }
+
+export function deepAssign<T>(dst: T, src: T): T {
+  if (src && typeof src === 'object') {
+    if (Array.isArray(src)) {
+      return src.map((s1, i) =>
+        deepAssign(Array.isArray(dst) ? dst[i] : dst, s1)
+      ) as any
+    } else if ((src as any).constructor === Object) {
+      return Object.entries(src).reduce(
+        (prev, [k, v]) => ({ ...prev, [k]: deepAssign((dst as any)[k], v) }),
+        {} as any
+      )
+    }
+    return src
+  } else if (typeof src !== 'undefined') {
+    return src
+  }
+  return dst
+}

@@ -1,14 +1,7 @@
-import {
-  encodeHash,
-  encodePath,
-  encodeQueryKey,
-  encodeQueryValue,
-  IURLParts,
-  makeUrl,
-  parseUrl,
-} from '../src'
+import { IURLParts, URLEncoder } from '../src'
 
 const KEYBOARD_EVENT = 'input'
+const urlEncoder = new URLEncoder()
 
 document.querySelectorAll('.repeatable input.key').forEach((el) => {
   el.addEventListener(KEYBOARD_EVENT, repeaterListener)
@@ -63,11 +56,14 @@ function encodeListener(evt: Event) {
 
   const label = target.getAttribute('aria-label') || ''
 
-  const handler: Record<string, (s: string, opts?: any) => string> = {
-    'url-segment': encodePath,
-    'url-qs-key': encodeQueryKey,
-    'url-qs-value': encodeQueryValue,
-    'url-hash': encodeHash,
+  const handler: Record<string, (s: string, opts: any) => string> = {
+    'url-segment': (s, opts) =>
+      urlEncoder.encode(s, { type: 'pathParam', ...opts }),
+    'url-qs-key': (s, opts) =>
+      urlEncoder.encode(s, { type: 'queryKey', ...opts }),
+    'url-qs-value': (s, opts) =>
+      urlEncoder.encode(s, { type: 'queryValue', ...opts }),
+    'url-hash': (s, opts) => urlEncoder.encode(s, { type: 'hash', ...opts }),
   }
 
   if (!handler[label]) {
@@ -90,7 +86,10 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
 
   let lastQueryKey = ''
   let isQueryKeyLast = false
-  let errorMessage = ''
+  const err = {
+    message: '',
+    decodedValue: '',
+  }
 
   document.querySelectorAll('input[aria-label^="url-"]').forEach((inp) => {
     const currentLabel = inp.getAttribute('aria-label') || ''
@@ -153,9 +152,9 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
   /**
    * Error already broadcasted in another function
    */
-  const u = makeUrl(urlParams, { onError: false })
+  const u = urlEncoder.makeUrl(urlParams, { onError: false })
   // @ts-ignore
-  const { segments, query, hash, url } = parseUrl(u, {
+  const { segments, query, hash, url } = urlEncoder.parseUrl(u, {
     onError: (e) => console.error(e.message),
   })
 
@@ -169,7 +168,7 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
       }
 
       if (outputType === 'search') {
-        if (pre && query) {
+        if (pre && pre.raw && query) {
           const possible = new Set<string>()
 
           if (pre.label === 'url-qs-key') {
@@ -183,9 +182,12 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
           }
 
           if (possible.size) {
-            const decodedValue = decodeURIComponent(pre.result)
+            const decodedValue = urlEncoder.decode(pre.result, {
+              type: pre.label === 'url-qs-key' ? 'queryKey' : 'queryValue',
+            })
             if (decodedValue !== pre.raw || !possible.has(decodedValue)) {
-              errorMessage = `Some of the query are mis-parsed: ${pre.result}`
+              err.message = `Some of the query are mis-parsed: ${pre.result}`
+              err.decodedValue = decodedValue
             }
           }
         }
@@ -199,10 +201,13 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
       }
 
       if (outputType === 'pathname') {
-        if (pre && pre.label === 'url-segment') {
-          const decodedValue = decodeURIComponent(pre.result)
+        if (pre && pre.raw && pre.label === 'url-segment') {
+          const decodedValue = urlEncoder.decode(pre.result, {
+            type: 'pathParam',
+          })
           if (decodedValue !== pre.raw || !(segments || []).includes(pre.raw)) {
-            errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
+            err.message = `Some of URL segments are mis-parsed: ${pre.raw}`
+            err.decodedValue = decodedValue
           }
         }
 
@@ -216,10 +221,11 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
       }
 
       if (outputType === 'hash') {
-        if (pre && pre.label === 'url-hash') {
-          const decodedValue = decodeURIComponent(pre.result)
+        if (pre && pre.raw && pre.label === 'url-hash') {
+          const decodedValue = urlEncoder.decode(pre.result, { type: 'hash' })
           if (decodedValue !== pre.raw || (hash && hash !== decodedValue)) {
-            errorMessage = `Some of URL segments are mis-parsed: ${pre.raw}`
+            err.message = `Some of URL segments are mis-parsed: ${pre.raw}`
+            err.decodedValue = decodedValue
           }
         }
 
@@ -232,7 +238,8 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
     }
   })
 
-  if (errorMessage) {
-    alert(errorMessage)
+  if (err.message) {
+    console.error(Object.assign(err, { pre }))
+    alert(err.message)
   }
 }

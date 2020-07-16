@@ -1,5 +1,5 @@
 import * as all from './src'
-const { encode } = all
+const { URLEncoder, ...remaining } = all
 
-Object.assign(encode, all)
-Object.assign(window, { encodeURIPlus: encode })
+Object.assign(URLEncoder, remaining)
+Object.assign(window, { EncodeURIPlus: URLEncoder })

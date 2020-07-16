@@ -12,11 +12,12 @@
   <section class="has-2-columns">
     <article class="h-screen-desktop">
       <h2>Compact URL builder</h2>
+
       <div>
         <h3>Path segments</h3>
         <small>
           <p>
-            Escaping <code>.</code> and <code>..</code> <a href="https://stackoverflow.com/questions/3856693/a-url-resource-that-is-a-dot-2e" target="_blank" rel="noopener noreferrer">are impossible</a>, with <code>encodeURI</code>, <code>encodeURIComponent</code>, <code>escape</code>. You might need <a href="encoder.html">another encoder</a>.
+            <a href="https://dev.to/patarapolw/dot-has-no-real-encoder-decoder-only-sanitizer-1749" target="_blank" rel="noopener noreferrer">Escaping <code>.</code> and <code>..</code></a>are now possible, with <code>encodeURIComponent(HTMLEntityEncoder.encode('.'))</code>.
           </p>
         </small>
         <ul class="repeatable">
@@ -30,6 +31,12 @@
       </div>
       <div>
         <h3>Querystring</h3>
+        <small>
+          <p>
+            Looking to encode Numbers, Arrays, and Objects? See <a href="encoder.html">/encoder.html</a>.
+          </p>
+        </small>
+
         <ul class="repeatable">
           <li>
             <article class="has-2-columns">
@@ -75,7 +82,7 @@
           <a href="https://github.com/patarapolw/encodeuri-plus/blob/0ac37cb64fb84be907762e27ba0d7affd03c38d1/src/index.ts#L287" target="_blank" rel="noopener noreferrer"><code>parseUrl</code> function</a>, based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties
         </p>
         <p>
-          Parsed and validated with <code>decodeURIComponent</code>
+          Parsed and validated with <code>decodeURIComponent</code> (and <code>HTMLEntityEncoder.decode</code> in case of <code>.</code>)
         </p>
       </small>
       <blockquote class="parsed-url">
@@ -99,6 +106,7 @@
     </article>
   </section>
 
+  <script src="../browser.ts"></script>
   <script src="main.ts"></script>
 </body>
 </html>

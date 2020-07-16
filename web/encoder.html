@@ -11,6 +11,10 @@
       word-break: break-all;
       white-space: pre-wrap;
     }
+
+    .notice {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -20,7 +24,13 @@
 
     <input type="text" name="q" id="q" style="display: none;"/>
 
-    <small class="notice" data-key="ERROR" style="display: none;">
+    <small class="notice" data-key="REGEXP">
+      <p>
+        Special objects, except <code>Date</code>, can not be serialized by default. These also include <code>Set</code> and <code>Map</code>.
+      </p>
+    </small>
+
+    <small class="notice" data-key="ERROR">
       <p>
         See <a href="https://stackoverflow.com/questions/3856693/a-url-resource-that-is-a-dot-2e" target="_blank" rel="noopener noreferrer">a-url-resource-that-is-a-dot-2e</a> and <a href="https://stackoverflow.com/questions/3235219/urlencoded-forward-slash-is-breaking-url" target="_blank" rel="noopener noreferrer">urlencoded-forward-slash-is-breaking-url</a>.
       </p>

@@ -22,13 +22,12 @@ const options = {
   WHITESPACE: ' \r\t\n',
   ARRAY: [1, 'a'],
   OBJECT: { a: 1 },
-  // REGEXP: /[A-Z]/gi,
+  REGEXP: /[A-Z]/gi,
   DATE: new Date(),
 }
 
 const presetEl = document.getElementById('preset')
 const qEl = document.getElementById('q')
-// const noticeEl = document.getElementById('notice')
 
 function parseLang(lang) {
   const v = presetEl.value ? JSON.parse(presetEl.value).v : qEl.value

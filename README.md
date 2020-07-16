@@ -11,7 +11,7 @@ Minimally and safely encode URIComponents for use in shorter URLs. Avoid Percent
 - Customizable options.
 
 ```ts
-export interface IEncodeOptions {
+interface IURLEncoderOptions {
   /**
    * Do not encode non-ASCII
    *
@@ -23,7 +23,7 @@ export interface IEncodeOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * forceEncode with `encodeAlways` function
+   * fallback with `encodeURIComponent` and `HTMLEntityEncoder.encode`
    */
   forceEncode?: (string | RegExp)[]
   /**
