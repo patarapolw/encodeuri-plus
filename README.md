@@ -23,7 +23,12 @@ export interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `encodeURIComponent` and `StarEncoder.encode`, as `encodeURIComponent` will NOT encode UNRESERVED characters
+   * fallback with `fixedEncodeURIComponent`, which is a stricter version of `encodeURIComponent`
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+   *
+   * As `fixedEncodeURIComponent` will NOT encode UNRESERVED characters
+   * and `.`, `..`, `/`, `\` may throw errors even if they are percent-encoded.
+   * Further force encoding is required -- `StarEncoder.encode`,
    */
   forceEncode?: (string | RegExp)[]
   /**
@@ -33,7 +38,7 @@ export interface IURLEncoderOptions {
   /**
    * `encodeURI` is required to make RESERVED set work by default.
    *
-   * However, it is enhanced with `forceEncode`
+   * However, it can be enhanced with `forceEncode`
    *
    * @default encodeURI
    */

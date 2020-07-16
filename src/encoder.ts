@@ -22,7 +22,12 @@ export interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `encodeURIComponent` and `StarEncoder.encode`, as `encodeURIComponent` will NOT encode UNRESERVED characters
+   * Fallback with `fixedEncodeURIComponent`, which is a stricter version of `encodeURIComponent`
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+   *
+   * As `fixedEncodeURIComponent` will NOT encode UNRESERVED characters
+   * and `.`, `..`, `/`, `\` may throw errors even if they are percent-encoded.
+   * Further force encoding is required -- `StarEncoder.encode`,
    */
   forceEncode?: (string | RegExp)[]
   /**
@@ -32,7 +37,7 @@ export interface IURLEncoderOptions {
   /**
    * `encodeURI` is required to make RESERVED set work by default.
    *
-   * However, it is enhanced with `forceEncode`
+   * However, it can be enhanced with `forceEncode`
    *
    * @default encodeURI
    */
@@ -359,11 +364,11 @@ export class URLEncoder {
               result: ((s: string) => {
                 for (const fn of [
                   opts.encoder || encodeURI,
-                  encodeURIComponent,
+                  fixedEncodeURIComponent,
                   /**
                    * Yes, double encoded
                    */
-                  (s: string) => encodeURIComponent(StarEncoder.encode(s)),
+                  (s: string) => fixedEncodeURIComponent(StarEncoder.encode(s)),
                 ]) {
                   const r = fn(s)
                   if (r !== s) {
@@ -402,16 +407,15 @@ export class URLEncoder {
   }
 }
 
-export const HTMLEntityEncoder = {
-  encode(s: string) {
-    return s
-      .split('')
-      .map((c) => `&#${c.charCodeAt(0)};`)
-      .join('')
-  },
-  decode(s: string) {
-    return s.replace(/&#(\d+);/g, (_, p1) => String.fromCharCode(parseInt(p1)))
-  },
+/**
+ * To be more stringent in adhering to RFC 3986 (which reserves !, ', (, ), and *),
+ * even though these characters have no formalized URI delimiting uses, the following can be safely used:
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+ */
+export function fixedEncodeURIComponent(str: string) {
+  return encodeURIComponent(str).replace(/[!'()*]/g, function (c) {
+    return '%' + c.charCodeAt(0).toString(16)
+  })
 }
 
 /**
