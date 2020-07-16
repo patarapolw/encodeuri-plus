@@ -11,7 +11,7 @@ Minimally and safely encode URIComponents for use in shorter URLs. Avoid Percent
 - Customizable options.
 
 ```ts
-interface IURLEncoderOptions {
+export interface IURLEncoderOptions {
   /**
    * Do not encode non-ASCII, i.e. `/[^\x00-\x7F]/`
    *
@@ -23,7 +23,7 @@ interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `encodeURIComponent` and `StarEncoder.encode`
+   * fallback with `encodeURIComponent` and `StarEncoder.encode`, as `encodeURIComponent` will NOT encode UNRESERVED characters
    */
   forceEncode?: (string | RegExp)[]
   /**
@@ -38,6 +38,12 @@ interface IURLEncoderOptions {
    * @default encodeURI
    */
   encoder?: (s: string) => string
+  /**
+   * decodeURIComponent seems to decode all percent-encoded anyway, and doesn't need fallback.
+   *
+   * @default decodeURIComponent
+   */
+  decoder?: (s: string) => string
   /**
    * Set to `false` to disable error
    */

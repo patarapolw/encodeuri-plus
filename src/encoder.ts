@@ -22,7 +22,7 @@ export interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `encodeURIComponent` and `StarEncoder.encode`
+   * fallback with `encodeURIComponent` and `StarEncoder.encode`, as `encodeURIComponent` will NOT encode UNRESERVED characters
    */
   forceEncode?: (string | RegExp)[]
   /**
