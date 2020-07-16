@@ -123,13 +123,17 @@ export class URLEncoder {
     } = {}
   ) {
     const r = decodeURIComponent(s)
+
+    /**
+     * This is necessary to fix the caveat of `/^\.{1,2}$/` not encoded.
+     */
     if (
       opts.type === 'pathParam' &&
       !(this.opts.keep && this.opts.keep.some((keep) => '.'.match(keep)))
     ) {
       return r.replace(
-        new RegExp(escapeRegExp(StarEncoder.encode('.')), 'g'),
-        '.'
+        new RegExp(`^(${escapeRegExp(StarEncoder.encode('.'))}){1,2}$`),
+        (p) => StarEncoder.decode(p)
       )
     }
 
@@ -185,28 +189,42 @@ export class URLEncoder {
     return (base.endsWith('/') ? base.slice(0, -1) : base) + u
   }
 
-  parseUrl(s: string, opts: IURLEncoderOptions = {}): IURLParts {
-    const onError =
-      typeof opts.onError === 'function'
-        ? opts.onError
-        : opts.onError === false
-        ? (_: Error) => null
-        : (e: Error) => {
-            throw e
-          }
+  parseUrl(
+    s: string,
+    opts: IURLEncoderOptions & {
+      /**
+       * decodeURIComponent seems to decode all percent-encoded anyway, and doesn't need fallback.
+       *
+       * @default decodeURIComponent
+       */
+      decoder?: (s: string) => string
+      /**
+       * This ensures that URL control characters aren't necessarily generated.
+       *
+       * @default decodeURI
+       */
+      decodeBaseUrl?: (s: string) => string
+    } = {}
+  ): IURLParts {
+    const onError = this._getOnError(opts.onError)
 
     const decoderArray: ((s: string, type: URLPartType | null) => string)[] = [
       (s, type) => {
-        return type ? decodeURIComponent(s) : decodeURI(s)
+        return type
+          ? (opts.decoder || decodeURIComponent)(s)
+          : (opts.decodeBaseUrl || decodeURI)(s)
       },
     ]
 
+    /**
+     * This is necessary to fix the caveat of `/^\.{1,2}$/` not encoded.
+     */
     if (!(this.opts.keep && this.opts.keep.some((keep) => '.'.match(keep)))) {
       decoderArray.push((s, type) => {
         return type === 'pathParam'
           ? s.replace(
-              new RegExp(escapeRegExp(StarEncoder.encode('.')), 'g'),
-              '.'
+              new RegExp(`^(${escapeRegExp(StarEncoder.encode('.'))}){1,2}$`),
+              (p) => StarEncoder.decode(p)
             )
           : s
       })
