@@ -83,7 +83,7 @@ export class URLEncoder {
     const onError = this._getOnError(_onError)
 
     if (opts.type === 'pathParam') {
-      if (keep && keep.some((k) => '.'.match(k))) {
+      if (!(keep && keep.some((k) => '.'.match(k)))) {
         throws.push(/^\.{1,2}$/)
       }
 
