@@ -38,6 +38,12 @@ export interface IURLEncoderOptions {
    */
   encoder?: (s: string) => string
   /**
+   * decodeURIComponent seems to decode all percent-encoded anyway, and doesn't need fallback.
+   *
+   * @default decodeURIComponent
+   */
+  decoder?: (s: string) => string
+  /**
    * Set to `false` to disable error
    */
   onError?: boolean | ((e: Error) => any)
@@ -99,7 +105,7 @@ export class URLEncoder {
 
     let segments: ISegment[] = [{ raw: s }]
     segments = this._parseKeep(segments, { keep })
-    segments = this._parseForced(segments, { forceEncode, encoder })
+    segments = this._parseForceEncode(segments, { forceEncode, encoder })
 
     return segments
       .map(({ raw, doEncode, result }) => {
@@ -118,16 +124,17 @@ export class URLEncoder {
 
   decode(
     s: string,
-    opts: {
+    opts: Pick<IURLEncoderOptions, 'decoder'> & {
       type?: URLPartType
     } = {}
   ) {
-    const r = decodeURIComponent(s)
+    const r = (opts.decoder || this.opts.decoder || decodeURIComponent)(s)
 
     /**
      * This is necessary to fix the caveat of `/^\.{1,2}$/` not encoded.
      */
     if (
+      !opts.decoder &&
       opts.type === 'pathParam' &&
       !(this.opts.keep && this.opts.keep.some((keep) => '.'.match(keep)))
     ) {
@@ -191,13 +198,7 @@ export class URLEncoder {
 
   parseUrl(
     s: string,
-    opts: IURLEncoderOptions & {
-      /**
-       * decodeURIComponent seems to decode all percent-encoded anyway, and doesn't need fallback.
-       *
-       * @default decodeURIComponent
-       */
-      decoder?: (s: string) => string
+    opts: Pick<IURLEncoderOptions, 'decoder' | 'onError'> & {
       /**
        * This ensures that URL control characters aren't necessarily generated.
        *
@@ -206,6 +207,8 @@ export class URLEncoder {
       decodeBaseUrl?: (s: string) => string
     } = {}
   ): IURLParts {
+    opts = deepAssign(opts, this.opts)
+
     const onError = this._getOnError(opts.onError)
 
     const decoderArray: ((s: string, type: URLPartType | null) => string)[] = [
@@ -219,7 +222,10 @@ export class URLEncoder {
     /**
      * This is necessary to fix the caveat of `/^\.{1,2}$/` not encoded.
      */
-    if (!(this.opts.keep && this.opts.keep.some((keep) => '.'.match(keep)))) {
+    if (
+      !opts.decoder &&
+      !(this.opts.keep && this.opts.keep.some((keep) => '.'.match(keep)))
+    ) {
       decoderArray.push((s, type) => {
         return type === 'pathParam'
           ? s.replace(
@@ -333,7 +339,10 @@ export class URLEncoder {
     return segments
   }
 
-  private _parseForced(segments: ISegment[], opts: IURLEncoderOptions = {}) {
+  private _parseForceEncode(
+    segments: ISegment[],
+    opts: IURLEncoderOptions = {}
+  ) {
     const splitter = (re: RegExp) => {
       segments = segments.flatMap((seg) => {
         if (seg.doEncode === false || typeof seg.result === 'string') {
