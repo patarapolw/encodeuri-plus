@@ -76,7 +76,11 @@ export class URLEncoder {
         throws.push(/^\.{1,2}$/)
       }
 
-      forceEncode.push(...URL_CONSTRUCTOR_UNSAFE.get('pathname'))
+      const unsafe = URL_CONSTRUCTOR_UNSAFE.get('pathname').filter(
+        (c) => c !== '.'
+      )
+
+      forceEncode.push(...unsafe, /^\.{1,2}$/)
     } else if (opts.type === 'queryKey') {
       forceEncode.push(...URL_CONSTRUCTOR_UNSAFE.get('key'))
     } else if (opts.type === 'queryValue') {
@@ -277,11 +281,18 @@ export class URLEncoder {
   ) {
     const splitter = (re: RegExp) => {
       segments = segments.flatMap((seg) => {
-        return seg.raw.split(re).map((s) => {
-          return {
-            raw: s,
-            doEncode: !re.test(s),
+        const m = seg.raw.match(re) || []
+
+        return seg.raw.split(re).flatMap((s, i) => {
+          const out: ISegment[] = [{ raw: s }]
+          if (m[i]) {
+            out.push({
+              raw: m[i],
+              doEncode: false,
+            })
           }
+
+          return out
         })
       })
     }
@@ -297,11 +308,11 @@ export class URLEncoder {
         return true
       })
       .map((el) => el as RegExp)) {
-      splitter(new RegExp(`(${re.source})`, re.flags))
+      splitter(re)
     }
 
     if (regexParts.length) {
-      splitter(new RegExp(`(${regexParts.map(escapeRegExp).join('|')})`, 'g'))
+      splitter(new RegExp(`(?:${regexParts.map(escapeRegExp).join('|')})`, 'g'))
     }
 
     return segments
@@ -313,32 +324,37 @@ export class URLEncoder {
   ) {
     const splitter = (re: RegExp) => {
       segments = segments.flatMap((seg) => {
-        if (seg.doEncode === false) {
+        if (seg.doEncode === false || typeof seg.result === 'string') {
           return [seg]
         }
 
-        return seg.raw.split(re).map((s) => {
-          return {
-            raw: s,
-            result: re.test(s)
-              ? ((s: string) => {
-                  for (const fn of [
-                    encodeURIComponent,
-                    /**
-                     * Yes, double encoded
-                     */
-                    (s: string) =>
-                      encodeURIComponent(HTMLEntityEncoder.encode(s)),
-                  ]) {
-                    const r = fn(s)
-                    if (r !== s) {
-                      return r
-                    }
+        const m = seg.raw.match(re) || []
+
+        return seg.raw.split(re).flatMap((s, i) => {
+          const out: ISegment[] = [{ raw: s }]
+          if (m[i]) {
+            out.push({
+              raw: m[i],
+              result: ((s: string) => {
+                for (const fn of [
+                  encodeURIComponent,
+                  /**
+                   * Yes, double encoded
+                   */
+                  (s: string) =>
+                    encodeURIComponent(HTMLEntityEncoder.encode(s)),
+                ]) {
+                  const r = fn(s)
+                  if (r !== s) {
+                    return r
                   }
-                  return undefined
-                })(s)
-              : undefined,
+                }
+                return undefined
+              })(m[i]),
+            })
           }
+
+          return out
         })
       })
     }
@@ -354,11 +370,11 @@ export class URLEncoder {
         return true
       })
       .map((el) => el as RegExp)) {
-      splitter(new RegExp(`(${re.source})`, re.flags))
+      splitter(re)
     }
 
     if (regexParts.length) {
-      splitter(new RegExp(`(${regexParts.map(escapeRegExp).join('|')})`, 'g'))
+      splitter(new RegExp(`(?:${regexParts.map(escapeRegExp).join('|')})`, 'g'))
     }
 
     return segments

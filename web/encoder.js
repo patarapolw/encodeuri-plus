@@ -1,13 +1,28 @@
 import jsurl from 'jsurl'
+import Msgpack from 'msgpack-lite'
 import rison from 'rison-node'
 
 const parser = {
-  rison: (s) => rison.encode(s),
-  jsurl: (s) => jsurl.stringify(s),
-  json: (s) => JSON.stringify(s),
+  rison: {
+    handler: (s) => rison.encode(s),
+    link: 'https://github.com/w33ble/rison-node',
+  },
+  jsurl: {
+    handler: (s) => jsurl.stringify(s),
+    link: 'https://github.com/Sage/jsurl',
+  },
+  'msgpack + base65536': {
+    // eslint-disable-next-line no-undef
+    handler: (s) => base65536.encode(Msgpack.encode(s)),
+    link:
+      'https://stackoverflow.com/questions/44553061/most-compact-url-encoding-of-json-data/44553626',
+  },
+  JSON: (s) => JSON.stringify(s),
 }
 
 const encoder = {
+  // eslint-disable-next-line no-control-regex
+  'encodeURI ascii-only': (s) => (/[^\x00-\x7F]/.test(s) ? s : encodeURI(s)),
   encodeURI: (s) => encodeURI(s),
   encodeURIComponent: (s) => encodeURIComponent(s),
 }
@@ -16,8 +31,10 @@ const options = {
   RESERVED: ';,/?:@&=+$',
   UNRESERVED: '-_.~',
   ENCODED: '"<>`{}',
+  NOT_ENCODED: "'!()",
   ERROR: './\\',
   LETTER: 'abcdefghijklmnopqrstuvwxyz',
+  UNICODE: 'お早う😺🥳🦄',
   NUMBER: 1234567890,
   WHITESPACE: ' \r\t\n',
   ARRAY: [1, 'a'],
@@ -31,7 +48,8 @@ const qEl = document.getElementById('q')
 
 function parseLang(lang) {
   const v = presetEl.value ? JSON.parse(presetEl.value).v : qEl.value
-  const result = parser[lang](v)
+  const handler = parser[lang].handler || parser[lang]
+  const result = handler(v)
 
   document.querySelector(`section[data-lang="${lang}"] code`).innerText = result
 
@@ -84,11 +102,18 @@ function buildPage() {
 
   const articleEl = document.querySelector('article')
 
-  Object.keys(parser).map((p) => {
+  Object.entries(parser).map(([p, { link }]) => {
     const clone = document.querySelector('template').content.cloneNode(true)
 
     clone.querySelector('section').setAttribute('data-lang', p)
-    clone.querySelector('h2').innerText = p
+
+    if (link) {
+      const aEl = clone.querySelector('h2 a')
+      aEl.href = link
+      aEl.innerText = p
+    } else {
+      clone.querySelector('h2 span').innerText = p
+    }
 
     const ulEl = clone.querySelector('ul')
     Object.keys(encoder).map((enc) => {

@@ -17,7 +17,7 @@
         <h3>Path segments</h3>
         <small>
           <p>
-            <a href="https://dev.to/patarapolw/dot-has-no-real-encoder-decoder-only-sanitizer-1749" target="_blank" rel="noopener noreferrer">Escaping <code>.</code> and <code>..</code></a>are now possible, with <code>encodeURIComponent(HTMLEntityEncoder.encode('.'))</code>.
+            <a href="https://dev.to/patarapolw/dot-has-no-real-encoder-decoder-only-sanitizer-1749" target="_blank" rel="noopener noreferrer">Escaping <code>.</code> and <code>..</code></a>are now possible, with <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L331" target="_blank" rel="noopener noreferrer"><code>encodeURIComponent(HTMLEntityEncoder.encode('.'))</code></a>.
           </p>
         </small>
         <ul class="repeatable">
@@ -71,7 +71,7 @@
       <h3>Generated URL</h3>
       <small>
         <p>
-          <a href="https://github.com/patarapolw/encodeuri-plus/blob/0ac37cb64fb84be907762e27ba0d7affd03c38d1/src/index.ts#L259" target="_blank" rel="noopener noreferrer"><code>makeUrl</code> function</a>, using basic string concatenation.
+          <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L139" target="_blank" rel="noopener noreferrer"><code>makeUrl</code> function</a>, using basic string concatenation.
         </p>
       </small>
       <pre><code data-output="full"></code></pre>
@@ -79,10 +79,10 @@
       <h3>Parsed URL</h3>
       <small>
         <p>
-          <a href="https://github.com/patarapolw/encodeuri-plus/blob/0ac37cb64fb84be907762e27ba0d7affd03c38d1/src/index.ts#L287" target="_blank" rel="noopener noreferrer"><code>parseUrl</code> function</a>, based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties
+          <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L184" target="_blank" rel="noopener noreferrer"><code>parseUrl</code> function</a>, based on <a href="https://url.spec.whatwg.org/" target="_blank" rel="noopener noreferrer">WHATWG URL</a> constructor's properties
         </p>
         <p>
-          Parsed and validated with <code>decodeURIComponent</code> (and <code>HTMLEntityEncoder.decode</code> in case of <code>.</code>)
+          Parsed and validated with <code>decodeURIComponent</code> (and <code>HTMLEntityEncoder.decode</code> in case of <code>.</code> in pathname)
         </p>
       </small>
       <blockquote class="parsed-url">
@@ -93,7 +93,7 @@
         <h4>Querystring (search)</h4>
         <small>
           <p>
-            <a href="https://github.com/patarapolw/encodeuri-plus/blob/0ac37cb64fb84be907762e27ba0d7affd03c38d1/src/index.ts#L340" target="_blank" rel="noopener noreferrer">Looping</a> through <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams" target="_blank" rel="noopener noreferrer">URL.searchPararms</a>
+            <a href="https://github.com/patarapolw/encodeuri-plus/blob/cf11969e2cb986514bfc7fda9e702f6b2e94cb05/src/encoder.ts#L232" target="_blank" rel="noopener noreferrer">Looping</a> through <a href="https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams" target="_blank" rel="noopener noreferrer">URL.searchPararms</a>
           </p>
         </small>
         <pre><code class="language-json" data-output="search"></code></pre>

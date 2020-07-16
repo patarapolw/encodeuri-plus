@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/holiday.css" />
-  <title>Comparing encoders</title>
+  <title>Encoders comparison</title>
 
   <style>
     code {
@@ -15,11 +15,23 @@
     .notice {
       display: none;
     }
+
+    @media screen and (min-width: 800px) {
+      body {
+        max-width: 1200px;
+      }
+
+      .has-2-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Encoders showdown</h1>
+    <h1>Encoders comparison</h1>
     <select name="preset" id="preset"></select>
 
     <input type="text" name="q" id="q" style="display: none;"/>
@@ -35,23 +47,23 @@
         See <a href="https://stackoverflow.com/questions/3856693/a-url-resource-that-is-a-dot-2e" target="_blank" rel="noopener noreferrer">a-url-resource-that-is-a-dot-2e</a> and <a href="https://stackoverflow.com/questions/3235219/urlencoded-forward-slash-is-breaking-url" target="_blank" rel="noopener noreferrer">urlencoded-forward-slash-is-breaking-url</a>.
       </p>
       <p>
-        A way to escape dot for URL could be HTML entity: <code>.</code> to/from <code>&amp;#46;</code>.
-      </p>
-      <p>
-        <code>encodeURI</code>, <code>encodeURIComponent</code>, <code>escape</code> or even <code>Element.innerText</code> do not encode.
+        A way to escape dot for URL would be HTML entity: <code>.</code> to/from <code>&amp;#46;</code>.
       </p>
     </small>
 
     <template>
-      <section data-lang="json">
-        <h2>JSON</h2>
+      <section data-lang="">
+        <h2>
+          <span></span>
+          <a target="_blank" rel="noopener noreferrer"></a>
+        </h2>
         <pre><code></code></pre>
         <small>
           <ul>
             <template>
               <li>
-                <p>encodeURI</p>
-                <pre><code data-encode="encodeURI"></code></pre>
+                <p></p>
+                <pre><code data-encode=""></code></pre>
               </li>
             </template>
           </ul>
@@ -59,9 +71,10 @@
       </section>
     </template>
 
-    <article></article>
+    <article class="has-2-columns"></article>
   </main>
 
+  <script src='https://unpkg.com/base65536@3/dist/iife/base65536.js' crossorigin></script>
   <script src="encoder.js"></script>
 </body>
 </html>
