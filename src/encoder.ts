@@ -26,8 +26,11 @@ export interface IURLEncoderOptions {
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
    *
    * As `fixedEncodeURIComponent` will NOT encode UNRESERVED characters
-   * and `.`, `..`, `/`, `\` may throw errors even if they are percent-encoded.
-   * Further force encoding is required -- `StarEncoder.encode`,
+   * and `/`, `\` may throw errors even if they are percent-encoded.
+   * Further force encoding is required -- `StarEncoder.encode`.
+   *
+   * For `.`, `..`, as long as it is not along, it should work.
+   * Perhaps perfix it with `"` (in JSON)?
    */
   forceEncode?: (string | RegExp)[]
   /**
@@ -294,7 +297,8 @@ export class URLEncoder {
     return Object.assign(JSON.parse(JSON.stringify(output)), { url })
   }
 
-  private _getOnError(onError?: IURLEncoderOptions['onError']) {
+  private _getOnError(onError: IURLEncoderOptions['onError']) {
+    onError = typeof onError === 'undefined' ? this.opts.onError : onError
     return typeof onError === 'function'
       ? onError
       : onError === false

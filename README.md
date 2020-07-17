@@ -23,12 +23,15 @@ export interface IURLEncoderOptions {
    */
   keep?: (string | RegExp)[]
   /**
-   * fallback with `fixedEncodeURIComponent`, which is a stricter version of `encodeURIComponent`
+   * Fallback with `fixedEncodeURIComponent`, which is a stricter version of `encodeURIComponent`
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
    *
    * As `fixedEncodeURIComponent` will NOT encode UNRESERVED characters
-   * and `.`, `..`, `/`, `\` may throw errors even if they are percent-encoded.
-   * Further force encoding is required -- `StarEncoder.encode`,
+   * and `/`, `\` may throw errors even if they are percent-encoded.
+   * Further force encoding is required -- `StarEncoder.encode`.
+   *
+   * For `.`, `..`, as long as it is not along, it should work.
+   * Perhaps perfix it with `"` (in JSON)?
    */
   forceEncode?: (string | RegExp)[]
   /**

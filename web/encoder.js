@@ -1,19 +1,16 @@
-import jsurl from 'jsurl'
-import Msgpack from 'msgpack-lite'
-import rison from 'rison-node'
+/* global rison, base65536, JSURL, msgpack */
 
 const parser = {
   rison: {
     handler: (s) => rison.encode(s),
     link: 'https://github.com/w33ble/rison-node',
   },
-  jsurl: {
-    handler: (s) => jsurl.stringify(s),
+  JSURL: {
+    handler: (s) => JSURL.stringify(s),
     link: 'https://github.com/Sage/jsurl',
   },
   'msgpack + base65536': {
-    // eslint-disable-next-line no-undef
-    handler: (s) => base65536.encode(Msgpack.encode(s)),
+    handler: (s) => base65536.encode(msgpack.encode(s)),
     link:
       'https://stackoverflow.com/questions/44553061/most-compact-url-encoding-of-json-data/44553626',
   },

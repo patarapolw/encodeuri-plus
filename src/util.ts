@@ -13,10 +13,11 @@ export function deepAssign<T>(dst: T, src: T): T {
         deepAssign(Array.isArray(dst) ? dst[i] : dst, s1)
       ) as any
     } else if ((src as any).constructor === Object) {
-      return Object.entries(src).reduce(
+      const r = Object.entries(src).reduce(
         (prev, [k, v]) => ({ ...prev, [k]: deepAssign((dst as any)[k], v) }),
-        {} as any
+        dst as any
       )
+      return r
     }
     return src
   } else if (typeof src !== 'undefined') {
