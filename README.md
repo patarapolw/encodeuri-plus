@@ -31,7 +31,7 @@ export interface IURLEncoderOptions {
    * Further force encoding is required -- `StarEncoder.encode`.
    *
    * For `.`, `..`, as long as it is not alone, it should work.
-   * Perhaps prefix it with `"` (in JSON)?
+   * Perhaps prefix it with `~` (as it will not be URI_encoded)?
    */
   forceEncode?: (string | RegExp)[]
   /**

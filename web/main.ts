@@ -1,7 +1,13 @@
-import { IURLParts, URLEncoder } from '../src'
+interface Window {
+  EncodeURIPlus: typeof import('../src')['URLEncoder']
+}
+
+type IURLParts = import('../src').IURLParts
+
+const { EncodeURIPlus } = window
 
 const KEYBOARD_EVENT = 'input'
-const urlEncoder = new URLEncoder()
+const urlEncoder = new EncodeURIPlus()
 
 document.querySelectorAll('.repeatable input.key').forEach((el) => {
   el.addEventListener(KEYBOARD_EVENT, repeaterListener)
@@ -71,7 +77,7 @@ function encodeListener(evt: Event) {
   }
 
   const result = handler[label](target.value, {
-    onError: (e: Error) => console.error(e.message),
+    onError: (e: Error) => alert(e.message),
   })
   const output = section.querySelector('code')
   if (output) {
@@ -155,7 +161,7 @@ function buildUrl(pre?: { label: string; raw: string; result: string }) {
   const u = urlEncoder.makeUrl(urlParams, { onError: false })
   // @ts-ignore
   const { segments, query, hash, url } = urlEncoder.parseUrl(u, {
-    onError: (e) => console.error(e.message),
+    onError: (e) => alert(e.message),
   })
 
   document.querySelectorAll('[data-output]').forEach((el) => {

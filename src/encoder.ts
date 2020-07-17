@@ -30,7 +30,7 @@ export interface IURLEncoderOptions {
    * Further force encoding is required -- `StarEncoder.encode`.
    *
    * For `.`, `..`, as long as it is not alone, it should work.
-   * Perhaps prefix it with `"` (in JSON)?
+   * Perhaps prefix it with `~` (as it will not be URI_encoded)?
    */
   forceEncode?: (string | RegExp)[]
   /**
@@ -76,14 +76,13 @@ export class URLEncoder {
     } = {}
   ) {
     const {
-      onError: _onError,
       keep = [],
       throws = [],
       forceEncode = [],
       allowNonAscii = true,
       encoder = encodeURI,
     } = deepAssign(opts, this.opts)
-    const onError = this._getOnError(_onError)
+    const onError = this._getOnError(opts)
 
     if (opts.type === 'pathParam') {
       if (!(keep && keep.some((k) => '.'.match(k)))) {
@@ -111,9 +110,11 @@ export class URLEncoder {
       keep.push(NON_ASCII)
     }
 
+    Object.assign(opts, { keep, throws, forceEncode, allowNonAscii, encoder })
+
     let segments: ISegment[] = [{ raw: s }]
-    segments = this._parseKeep(segments, { keep })
-    segments = this._parseForceEncode(segments, { forceEncode, encoder })
+    segments = this._parseKeep(segments, opts)
+    segments = this._parseForceEncode(segments, opts)
 
     return segments
       .map(({ raw, doEncode, result }) => {
@@ -217,7 +218,7 @@ export class URLEncoder {
   ): IURLParts {
     opts = deepAssign(opts, this.opts)
 
-    const onError = this._getOnError(opts.onError)
+    const onError = this._getOnError(opts)
 
     const decoderArray: ((s: string, type: URLPartType | null) => string)[] = [
       (s, type) => {
@@ -297,8 +298,8 @@ export class URLEncoder {
     return Object.assign(JSON.parse(JSON.stringify(output)), { url })
   }
 
-  private _getOnError(onError: IURLEncoderOptions['onError']) {
-    onError = typeof onError === 'undefined' ? this.opts.onError : onError
+  private _getOnError(opts: Pick<IURLEncoderOptions, 'onError'>) {
+    const { onError = this.opts.onError } = opts
     return typeof onError === 'function'
       ? onError
       : onError === false
