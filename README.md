@@ -30,8 +30,8 @@ export interface IURLEncoderOptions {
    * and `/`, `\` may throw errors even if they are percent-encoded.
    * Further force encoding is required -- `StarEncoder.encode`.
    *
-   * For `.`, `..`, as long as it is not along, it should work.
-   * Perhaps perfix it with `"` (in JSON)?
+   * For `.`, `..`, as long as it is not alone, it should work.
+   * Perhaps prefix it with `"` (in JSON)?
    */
   forceEncode?: (string | RegExp)[]
   /**
